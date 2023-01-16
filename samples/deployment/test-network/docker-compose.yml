@@ -1,0 +1,72 @@
+# Copyright IBM Corp. All Rights Reserved.
+# Copyright 2020 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+version: '3'
+
+services:
+  #  org1
+  ecc.peer0.org1.example.com:
+    container_name: ${CC_ID}.peer0.org1.example.com
+    hostname: ${CC_ID}.peer0.org1.example.com
+    image: fpc/fpc-${CC_ID}${HW_EXTENSION:-}:${FPC_VERSION}
+    environment:
+      - CHAINCODE_SERVER_ADDRESS=${CC_ID}.peer0.org1.example.com:9999
+      - CHAINCODE_PKG_ID=${ORG1_ECC_PKG_ID}
+      - FABRIC_LOGGING_SPEC=${FABRIC_LOGGING_SPEC:-DEBUG}
+      - SGX_MODE=${SGX_MODE:-SIM}
+    networks:
+      - default
+    volumes:
+      - ${SGX_CREDENTIALS_PATH:-../../../config/ias/}:/project/src/github.com/hyperledger/fabric-private-chaincode/config/ias/
+      - ${AESMD_PATH:-/dev/null}:${AESMD_PATH:-/dev/null}
+    devices:
+      - ${SGX_DEVICE_PATH:-/dev/null}:${SGX_DEVICE_PATH:-/dev/null}
+
+  ercc.peer0.org1.example.com:
+    container_name: ercc.peer0.org1.example.com
+    hostname: ercc.peer0.org1.example.com
+    image: fpc/ercc:${FPC_VERSION}
+    environment:
+      - CHAINCODE_SERVER_ADDRESS=ercc.peer0.org1.example.com:9999
+      - CHAINCODE_PKG_ID=${ORG1_ERCC_PKG_ID}
+      - FABRIC_LOGGING_SPEC=${FABRIC_LOGGING_SPEC:-DEBUG}
+      - SGX_MODE=${SGX_MODE:-SIM}
+    networks:
+      - default
+
+  # org2
+  ecc.peer0.org2.example.com:
+    container_name: ${CC_ID}.peer0.org2.example.com
+    hostname: ${CC_ID}.peer0.org2.example.com
+    image: fpc/fpc-${CC_ID}${HW_EXTENSION:-}:${FPC_VERSION}
+    environment:
+      - CHAINCODE_SERVER_ADDRESS=${CC_ID}.peer0.org2.example.com:9999
+      - CHAINCODE_PKG_ID=${ORG2_ECC_PKG_ID}
+      - FABRIC_LOGGING_SPEC=${FABRIC_LOGGING_SPEC:-DEBUG}
+      - SGX_MODE=${SGX_MODE:-SIM}
+    networks:
+      - default
+    volumes:
+      - ${SGX_CREDENTIALS_PATH:-../../../config/ias/}:/project/src/github.com/hyperledger/fabric-private-chaincode/config/ias/
+      - ${AESMD_PATH:-/dev/null}:${AESMD_PATH:-/dev/null}
+    devices:
+      - ${SGX_DEVICE_PATH:-/dev/null}:${SGX_DEVICE_PATH:-/dev/null}
+
+  ercc.peer0.org2.example.com:
+    container_name: ercc.peer0.org2.example.com
+    hostname: ercc.peer0.org2.example.com
+    image: fpc/ercc:${FPC_VERSION}
+    environment:
+      - CHAINCODE_SERVER_ADDRESS=ercc.peer0.org2.example.com:9999
+      - CHAINCODE_PKG_ID=${ORG2_ERCC_PKG_ID}
+      - FABRIC_LOGGING_SPEC=${FABRIC_LOGGING_SPEC:-DEBUG}
+      - SGX_MODE=${SGX_MODE:-SIM}
+    networks:
+      - default
+
+networks:
+  default:
+    external:
+      name: fabric_test
