@@ -1,0 +1,35 @@
+# Copyright 2020 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+include_guard()
+
+SET(U_LOGGING_LIB_NAME ulogging)
+SET(T_LOGGING_LIB_NAME tlogging)
+
+# set LOGGING_FLAGS based on SGX_BUILD
+if (SGX_BUILD STREQUAL "DEBUG")
+    set(LOGGING_FLAGS "-DDO_DEBUG=true")
+elseif(SGX_BUILD STREQUAL "PRERELEASE")
+    set(LOGGING_FLAGS "-DDO_DEBUG=false")
+elseif(SGX_BUILD STREQUAL "RELEASE")
+    set(LOGGING_FLAGS "-DDO_DEBUG=false")
+else()
+    message(FATAL_ERROR "Unknown build ${SGX_BUILD}, cannot set logging flags")
+endif()
+
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${LOGGING_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${LOGGING_FLAGS}")
+
+FUNCTION(COND_ENABLE_COVERAGE TARGET_LIB)
+    IF($ENV{CODE_COVERAGE_ENABLED})
+        MESSAGE("codcov enabled")
+        TARGET_COMPILE_OPTIONS(${TARGET_LIB} PUBLIC $<$<COMPILE_LANGUAGE:C>:-O0 -g --coverage>)
+        TARGET_COMPILE_OPTIONS(${TARGET_LIB} PUBLIC $<$<COMPILE_LANGUAGE:CXX>:-O0 -g --coverage>)
+
+        TARGET_LINK_LIBRARIES(${TARGET_LIB} --coverage)
+    ELSE()
+        MESSAGE("codcov disabled")
+    ENDIF()
+ENDFUNCTION()
+
