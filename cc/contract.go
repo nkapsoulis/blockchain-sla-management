@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
+	"github.com/hyperledger/fabric-private-chaincode/structs"
 )
 
 // SmartContract provides functions for managing an Asset
@@ -16,7 +17,7 @@ type SmartContract struct {
 }
 
 type cc_SLA struct {
-	SLA
+	structs.SLA
 	ProviderApproved bool    `json:"providerApproved"`
 	ConsumerApproved bool    `json:"consumerApproved"`
 	RefundValue      int     `json:"RefundValue"` // compensation amount
@@ -114,7 +115,7 @@ func (s *SmartContract) Approve(ctx contractapi.TransactionContextInterface, sla
 
 // CreateOrUpdateContract issues a new Contract to the world state with given details.
 func (s *SmartContract) CreateOrUpdateContract(ctx contractapi.TransactionContextInterface, contractJSON string) error {
-	var sla SLA
+	var sla structs.SLA
 	err := json.Unmarshal([]byte(contractJSON), &sla)
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal json: %v", err)
@@ -217,7 +218,7 @@ func (s *SmartContract) ContractExists(ctx contractapi.TransactionContextInterfa
 
 // SLAViolated changes the number of violations that have happened.
 func (s *SmartContract) SLAViolated(ctx contractapi.TransactionContextInterface, violation string) error {
-	var vio Violation
+	var vio structs.Violation
 	err := json.Unmarshal([]byte(violation), &vio)
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal json: %v", err)

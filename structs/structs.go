@@ -1,4 +1,4 @@
-package main
+package structs
 
 type SLA struct {
 	ID         string     `json:"id"`
