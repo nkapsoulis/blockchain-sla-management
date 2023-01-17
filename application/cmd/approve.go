@@ -4,7 +4,7 @@ import (
 	"crypto/ed25519"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 
 	"github.com/hyperledger/fabric-private-chaincode/samples/application/simple-cli-go/pkg"
@@ -28,7 +28,7 @@ var approveCmd = &cobra.Command{
 		defer jsonFile.Close()
 
 		// read our opened jsonFile as a byte array.
-		byteValue, err := ioutil.ReadAll(jsonFile)
+		byteValue, err := io.ReadAll(jsonFile)
 		if err != nil {
 			panic(err)
 		}
@@ -47,7 +47,7 @@ var approveCmd = &cobra.Command{
 		}
 		defer privKeyFile.Close()
 
-		privKeyBytes, err := ioutil.ReadAll(privKeyFile)
+		privKeyBytes, err := io.ReadAll(privKeyFile)
 		if err != nil {
 			panic(err)
 		}

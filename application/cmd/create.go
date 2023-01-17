@@ -3,7 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 
 	"github.com/hyperledger/fabric-private-chaincode/samples/application/simple-cli-go/pkg"
@@ -27,7 +27,7 @@ var createCmd = &cobra.Command{
 		defer jsonFile.Close()
 
 		// read our opened jsonFile as a byte array.
-		byteValue, err := ioutil.ReadAll(jsonFile)
+		byteValue, err := io.ReadAll(jsonFile)
 		if err != nil {
 			panic(err)
 		}
