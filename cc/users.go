@@ -49,6 +49,12 @@ func (s *SmartContract) CreateUser(ctx contractapi.TransactionContextInterface,
 	if err != nil {
 		return fmt.Errorf("unable to marshal json: %v", err)
 	}
+	err = ctx.GetStub().PutState(pubkey, []byte(name))
+
+	if err != nil {
+		return err
+	}
+
 	return ctx.GetStub().PutState(fmt.Sprintf("user_%v", name), userBytes)
 }
 
@@ -102,28 +108,15 @@ func (s *SmartContract) ReadUser(ctx contractapi.TransactionContextInterface, id
 func (s *SmartContract) QueryUsersByPublicKey(ctx contractapi.TransactionContextInterface,
 	publicKey string) (User, error) {
 	publicKey = strings.ReplaceAll(publicKey, "\n", "")
-	queryString := fmt.Sprintf(`{"selector":{"docType":"user","pubkey":"%s"}}`, publicKey)
-	fmt.Println(queryString)
 
-	resultsIterator, err := ctx.GetStub().GetQueryResult(queryString)
+	username, err := ctx.GetStub().GetState(publicKey)
 	if err != nil {
 		return User{}, fmt.Errorf("query failed: %v", err)
 	}
-	defer resultsIterator.Close()
 
-	if !resultsIterator.HasNext() {
-		return User{}, nil
-	}
-
-	queryResult, err := resultsIterator.Next()
+	user, err := s.ReadUser(ctx, string(username))
 	if err != nil {
-		return User{}, fmt.Errorf("taking result from iterator failed: %v", err)
-	}
-
-	var user User
-	err = json.Unmarshal(queryResult.Value, &user)
-	if err != nil {
-		return User{}, fmt.Errorf("could not unmarshal user: %v", err)
+		return User{}, err
 	}
 
 	return user, nil
