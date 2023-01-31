@@ -7,9 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 
 package main
 
-import (
-	"github.com/hyperledger/fabric-private-chaincode/samples/application/simple-cli-go/cmd"
-)
+import "github.com/hyperledger/fabric-private-chaincode/application/cmd"
 
 func main() {
 	cmd.Execute()

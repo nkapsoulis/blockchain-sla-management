@@ -2,12 +2,14 @@ package cmd
 
 import (
 	"crypto/ed25519"
+	"crypto/x509"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"io"
 	"os"
 
-	"github.com/hyperledger/fabric-private-chaincode/samples/application/simple-cli-go/pkg"
+	"github.com/hyperledger/fabric-private-chaincode/application/pkg"
 	"github.com/hyperledger/fabric-private-chaincode/structs"
 	"github.com/spf13/cobra"
 )
@@ -51,8 +53,27 @@ var approveCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
-		privKey := ed25519.PrivateKey(privKeyBytes)
-		signature := ed25519.Sign(privKey, byteValue)
+
+		block, _ := pem.Decode(privKeyBytes)
+		if block == nil {
+			panic("Key file could not be read")
+		}
+
+		if block.Type == "CERTIFICATE" {
+			panic("Public key provided instead of private key")
+		}
+
+		privateKey, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+		if err != nil {
+			panic(err)
+		}
+
+		key, ok := privateKey.(ed25519.PrivateKey)
+		if !ok {
+			panic("Wrong key type")
+		}
+
+		signature := ed25519.Sign(key, byteValue)
 
 		client := pkg.NewClient(config)
 		res := client.Invoke("Approve", sla.ID, args[1], string(signature))

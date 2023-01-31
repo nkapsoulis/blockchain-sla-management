@@ -4,7 +4,7 @@
 
 ARG FPC_VERSION=main
 
-FROM hyperledger/fabric-private-chaincode-ccenv:${FPC_VERSION}
+FROM ghcr.io/hyperledger/fabric-private-chaincode-ccenv:${FPC_VERSION}
 
 COPY fpcclient /usr/local/bin
 
