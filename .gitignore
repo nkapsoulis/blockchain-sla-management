@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: Apache-2.0
+tags
+config.override.mk
+make.log
+cscope.*
+*~
+**/_build/*
+# generate protos
+common/protos
+internal/protos
+coverage.out

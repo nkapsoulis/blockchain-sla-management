@@ -1,0 +1,9 @@
+# Copyright 2019 Intel Corporation
+# Copyright IBM Corp. All Rights Reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+set(SHIM_LIB_NAME shim)
+
+include(${COMMON_SOURCE_DIR}/crypto/CMakeVariables.txt)
+include(${COMMON_SOURCE_DIR}/logging/CMakeVariables.txt)

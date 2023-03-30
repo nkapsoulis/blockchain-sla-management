@@ -1,0 +1,44 @@
+/*
+ * Copyright IBM Corp. All Rights Reserved.
+ * Copyright 2020 Intel Corporation
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+enclave {
+    from "sgx_tstdc.edl" import *;
+    from "common.edl" import *;
+    from "attestation-api/ocalls/attestation-ocalls.edl" import *;
+
+    trusted {
+        public int ecall_cc_invoke(
+                [in, size=signed_proposal_proto_bytes_len] const uint8_t *signed_proposal_proto_bytes, uint32_t signed_proposal_proto_bytes_len,
+                [in, size=cc_request_message_bytes_len] const uint8_t *cc_request_message_bytes, uint32_t cc_request_message_bytes_len,
+                [out, size=signed_cc_response_message_bytes_len_in] uint8_t *signed_cc_response_message_bytes, uint32_t signed_cc_response_message_bytes_len_in,
+                [out] uint32_t *signed_cc_response_message_bytes_len_out,
+                [user_check] void *u_shim_ctx);
+
+    };
+
+    untrusted {
+        void ocall_get_state(
+                [in, string] const char *key,
+                [out, size=max_val_len] uint8_t *val, uint32_t max_val_len, [out] uint32_t *val_len,
+                [user_check] void *u_shim_ctx);
+
+        void ocall_put_state(
+                [in, string] const char *key,
+                [in, size=val_len] uint8_t *val, uint32_t val_len,
+                [user_check] void *u_shim_ctx);
+
+        void ocall_get_state_by_partial_composite_key(
+                [in, string] const char *comp_key,
+                [out, size=max_len] uint8_t *values, uint32_t max_len, [out] uint32_t *values_len,
+                [user_check] void *u_shim_ctx);
+
+        void ocall_del_state(
+                [in, string] const char *key,
+                [user_check] void *u_shim_ctx);
+    };
+
+};
