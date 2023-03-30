@@ -11,10 +11,9 @@
 GOFLAGS :=
 GO_CMD := go
 
-
 # Docker related settings
 #--------------------------------------------------
-export DOCKER_BUILDKIT ?= 0 
+export DOCKER_BUILDKIT ?= 1
 # Building with build-kit makes multi-stage builds more efficient
 # and also provides nicer output. However, as docker from older
 # versions of ubuntu 18.04 can hang and travis explicitly rejects
@@ -29,7 +28,7 @@ DOCKER_CMD := docker
 # - similarly you could also always turn off docker caching and force
 #   a complete rebuild by defining DOCKER_FORCE_REBUILD=1 (although
 #   this will have drastic performance implication and you might be better
-#   off doing that selectively on particular builds and/or use 
+#   off doing that selectively on particular builds and/or use
 #   `make clobber`.
 # - also useful docker overrides are following variables which allow you
 #   to add additional apt packages to various docker images
@@ -69,12 +68,12 @@ PROJECT_NAME=fabric-private-chaincode
 export FABRIC_VERSION ?= 2.3.3
 
 export FPC_VERSION := go-support
-export FPC_CCENV_IMAGE ?= hyperledger/fabric-private-chaincode-ccenv:$(FPC_VERSION)
+export FPC_CCENV_IMAGE ?= ghcr.io/hyperledger/fabric-private-chaincode-ccenv:$(FPC_VERSION)
 
 export FABRIC_PATH ?= ${GOPATH}/src/github.com/hyperledger/fabric
 
 export FPC_PATH=$(abspath $(TOP))
-# to allow volume mounts from within a dev(elopment) container, 
+# to allow volume mounts from within a dev(elopment) container,
 # below variable is used for volume mounts and can hence be
 # re-defined to point to the FPC path as seen by the docker daemon
 export DOCKERD_FPC_PATH ?= $(FPC_PATH)
