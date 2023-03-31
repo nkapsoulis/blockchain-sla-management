@@ -1,0 +1,173 @@
+package controllers
+
+import (
+	"encoding/json"
+	"net/http"
+	"strings"
+
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-gonic/gin"
+	"github.com/hyperledger/fabric-private-chaincode/api/globals"
+	"github.com/hyperledger/fabric-private-chaincode/api/ledger"
+	"github.com/hyperledger/fabric-private-chaincode/api/models"
+	"github.com/hyperledger/fabric-private-chaincode/api/utils"
+	"github.com/hyperledger/fabric-private-chaincode/lib"
+)
+
+type AssetURI struct {
+	ID string `uri:"id" binding:"required"`
+}
+
+func GetSingleSLA(c *gin.Context) {
+	var id AssetURI
+	if err := c.ShouldBindUri(&id); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	session := sessions.Default(c)
+	username := session.Get(globals.Userkey)
+
+	user := ledger.GetUser(username.(string))
+
+	if !slaInUserContracts(user, id.ID) {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User does not have access to this contract"})
+		return
+	}
+
+	asset, err := ledger.GetSLA(id.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": asset})
+	return
+}
+
+func CreateSLA(c *gin.Context) {
+	session := sessions.Default(c)
+	username := session.Get(globals.Userkey)
+
+	var sla lib.SLA
+
+	if err := c.BindJSON(&sla); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if sla.Details.Provider.Name != username {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "User is not the provider of the SLA"})
+		return
+	}
+
+	err := ledger.CreateSLA(sla)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{})
+
+}
+
+func GetSLAApprovalState(c *gin.Context) {
+	var id AssetURI
+	if err := c.ShouldBindUri(&id); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	session := sessions.Default(c)
+	username := session.Get(globals.Userkey)
+
+	user := ledger.GetUser(username.(string))
+
+	if !slaInUserContracts(user, id.ID) {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User does not have access to this contract"})
+		return
+	}
+	approval, err := ledger.GetSLAApproval(id.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": approval})
+}
+
+func ApproveSLA(c *gin.Context) {
+	var id AssetURI
+	if err := c.ShouldBindUri(&id); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var userAPI models.User
+
+	if err := c.BindJSON(&userAPI); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err})
+		return
+	}
+
+	if userAPI.Mnemonic == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Mnemonic is missing"})
+		return
+	}
+
+	session := sessions.Default(c)
+	username := session.Get(globals.Userkey)
+
+	user := ledger.GetUser(username.(string))
+
+	if !slaInUserContracts(user, id.ID) {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User does not have access to this contract"})
+		return
+	}
+
+	asset, err := ledger.GetSLA(id.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	slaJSON, err := json.Marshal(asset)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	signature, err := utils.SignWithPrivateKey(string(slaJSON), userAPI.Mnemonic, globals.Passphrase)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	err = ledger.Approve(id.ID, user.Name, signature)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{})
+	return
+
+}
+
+func slaInUserContracts(user lib.User, slaId string) bool {
+	clientList := strings.Split(user.ClientOf, ",")
+	// Slice of size 1 means that the delimiter was not found in the string
+	for _, sla := range clientList {
+		if sla == slaId {
+			return true
+		}
+	}
+
+	providerList := strings.Split(user.ProviderOf, ",")
+	// Slice of size 1 means that the delimiter was not found in the string
+	for _, sla := range providerList {
+		if sla == slaId {
+			return true
+		}
+	}
+	return false
+}
