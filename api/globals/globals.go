@@ -12,6 +12,7 @@ var Secret = []byte(randSeq(32))
 const Userkey = "user"
 const AppName = "fabric-private-chaincode"
 const Passphrase = "password"
+const SessionName = "fabricAuth"
 
 func randSeq(n int) string {
 	var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")

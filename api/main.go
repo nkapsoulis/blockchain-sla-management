@@ -37,7 +37,7 @@ func main() {
 		Domain:   "localhost",
 	})
 
-	router.Use(sessions.Sessions("session", store))
+	router.Use(sessions.Sessions(globals.SessionName, store))
 
 	public := router.Group("/")
 	routes.PublicRoutes(public)
