@@ -1,0 +1,10 @@
+.center-image {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-self: center;
+  }
+
+#landing-image {
+    width: 15em;
+}

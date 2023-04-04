@@ -1,0 +1,26 @@
+{
+  "name": "Fabric Channeled Add-ons Gen",
+  "description": "An open-source generator of Fabric add-on apps in dedicated channels.",
+  "version": "0.1.0",
+  "manifest_version": 3,
+  "permissions": [
+    "cookies",
+    "storage"
+  ],
+  "host_permissions": ["<all_urls>"],
+  "action": {
+    "default_popup": "index.html",
+    "default_icon": {
+      "16": "icons/fabric-logo-16x16.png",
+      "32": "icons/fabric-logo-32x32.png",
+      "48": "icons/fabric-logo-48x48.png",
+      "128": "icons/fabric-logo-128x128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/fabric-logo-16x16.png",
+    "32": "icons/fabric-logo-32x32.png",
+    "48": "icons/fabric-logo-48x48.png",
+    "128": "icons/fabric-logo-128x128.png"
+  }
+}

@@ -1,0 +1,23 @@
+.input {
+  box-sizing: border-box;
+  margin-top: 0.4rem;
+  font-size: 16px;
+  font-size: max(16px, 1em);
+  font-family: inherit;
+  padding: 0.25em 0.5em;
+  background-color: #fff;
+  border: 1px solid #ec0188;
+  border-radius: 4px;
+  width: 100%;
+  transition: 180ms box-shadow ease-in-out;
+}
+
+.input:focus {
+  border-color: hsl(245, 100%, 42%);
+  box-shadow: 0 0 0 1.5px hsla(245, 100%, calc(42% +
+  40%), 0.8);
+}
+
+textarea.input {
+  resize: vertical;
+}

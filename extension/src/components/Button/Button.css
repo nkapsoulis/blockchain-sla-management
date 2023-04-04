@@ -1,0 +1,30 @@
+.btn {
+  background-color: #ec0188;
+  color: white;
+  border-radius: 12px;
+  border: 0;
+  box-sizing: border-box;
+  cursor: pointer;
+  height: 3em;
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.btn:hover {
+  background-color: white;
+  color: #ec0188;
+  border: 1px #ec0188 solid;
+}
+
+.btn:disabled {
+  background-color: hsl(326, 99%, 20%);
+  cursor: not-allowed;
+}
+
+.btn:disabled:hover {
+  color: white;
+}
+.full-width {
+  width: 100%;
+}
+
