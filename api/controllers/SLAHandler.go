@@ -54,6 +54,9 @@ func GetUserSLAs(c *gin.Context) {
 	var SLAs []lib.SLA
 
 	for _, v := range getIDsFromString(user.ProviderOf) {
+		if v == "" {
+			break
+		}
 		asset, err := ledger.GetSLA(v)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -63,6 +66,9 @@ func GetUserSLAs(c *gin.Context) {
 	}
 
 	for _, v := range getIDsFromString(user.ClientOf) {
+		if v == "" {
+			break
+		}
 		asset, err := ledger.GetSLA(v)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
