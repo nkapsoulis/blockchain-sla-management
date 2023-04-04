@@ -45,6 +45,41 @@ func GetSingleSLA(c *gin.Context) {
 	return
 }
 
+func GetUserSLAs(c *gin.Context) {
+	session := sessions.Default(c)
+	username := session.Get(globals.Userkey)
+
+	user := ledger.GetUser(username.(string))
+
+	var SLAs []lib.SLA
+
+	for _, v := range getIDsFromString(user.ProviderOf) {
+		if v == "" {
+			break
+		}
+		asset, err := ledger.GetSLA(v)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		SLAs = append(SLAs, asset)
+	}
+
+	for _, v := range getIDsFromString(user.ClientOf) {
+		if v == "" {
+			break
+		}
+		asset, err := ledger.GetSLA(v)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		SLAs = append(SLAs, asset)
+	}
+	c.JSON(http.StatusOK, gin.H{"assets": SLAs})
+
+}
+
 func CreateSLA(c *gin.Context) {
 	session := sessions.Default(c)
 	username := session.Get(globals.Userkey)
@@ -67,7 +102,7 @@ func CreateSLA(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{})
+	c.JSON(http.StatusCreated, gin.H{})
 
 }
 
@@ -92,7 +127,7 @@ func GetSLAApprovalState(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": approval})
+	c.JSON(http.StatusOK, gin.H{"data": approval})
 }
 
 func ApproveSLA(c *gin.Context) {
@@ -154,20 +189,22 @@ func ApproveSLA(c *gin.Context) {
 }
 
 func slaInUserContracts(user lib.User, slaId string) bool {
-	clientList := strings.Split(user.ClientOf, ",")
 	// Slice of size 1 means that the delimiter was not found in the string
-	for _, sla := range clientList {
+	for _, sla := range getIDsFromString(user.ClientOf) {
 		if sla == slaId {
 			return true
 		}
 	}
 
-	providerList := strings.Split(user.ProviderOf, ",")
 	// Slice of size 1 means that the delimiter was not found in the string
-	for _, sla := range providerList {
+	for _, sla := range getIDsFromString(user.ProviderOf) {
 		if sla == slaId {
 			return true
 		}
 	}
 	return false
+}
+
+func getIDsFromString(idString string) []string {
+	return strings.Split(idString, ",")
 }
