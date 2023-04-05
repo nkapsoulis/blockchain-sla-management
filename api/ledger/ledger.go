@@ -3,7 +3,6 @@ package ledger
 import (
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"log"
 
 	"github.com/hyperledger/fabric-private-chaincode/api/globals"
@@ -39,7 +38,6 @@ func InitLedger() {
 			log.Fatalln(err)
 		}
 		CreateUser(u, keys.PublicKey().B58Serialize())
-		fmt.Println(u, mnemonic)
 	}
 
 }
@@ -111,7 +109,6 @@ func GetSLAApproval(id string) (lib.Approval, error) {
 func Approve(id, username string, signature []byte) error {
 	client := pkg.NewClient(globals.Config)
 	_, err := client.Invoke("Approve", id, username, hex.EncodeToString(signature))
-	fmt.Println(err)
 	if err != nil {
 		return err
 	}
