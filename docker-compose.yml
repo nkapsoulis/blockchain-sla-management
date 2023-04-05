@@ -1,0 +1,11 @@
+services:
+  ipfs:
+    container_name: ipfs_host
+    image: ipfs/kubo
+    ports:
+      - "4001:4001"
+      - "127.0.0.1:5001:5001"
+      - "127.0.0.1:8081:8080"
+    environment:
+      - ipfs_staging=/ipfs/staging
+      - ipfs_data=/ipfs/data
