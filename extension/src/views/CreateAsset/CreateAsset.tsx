@@ -22,13 +22,12 @@ export function CreateAsset() {
   const navigate = useNavigate();
   const fetcher = useFetcher();
 
-  const [success, setSuccess] = React.useState(false);
   const [message, setMessage] = React.useState('');
 
   React.useEffect(() => {
     if (fetcher.data && Object.keys(fetcher.data).length) {
       const data = fetcher.data as APIResponse;
-      setSuccess(data.success!);
+      navigate('/navigation');
       if (!data.success) {
         setMessage(data.message!);
       }
@@ -49,15 +48,13 @@ export function CreateAsset() {
         fetcher.state === 'submitting'
         && <Loader />
       }
-      { success
-        ? <p>Asset created</p>
-        : (message && (
-          <p>
-            Error:
-            {' '}
-            {message}
-          </p>
-        ))}
+      {message && (
+      <p>
+        Error:
+        {' '}
+        {message}
+      </p>
+      )}
     </>
   );
 }

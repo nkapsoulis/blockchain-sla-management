@@ -64,13 +64,14 @@ async function createAsset(asset: SLA): Promise<APIResponse> {
   return { success: false, message: json };
 }
 
-async function approveAsset(assetID: string): Promise<APIResponse> {
+async function approveAsset(assetID: string, mnemonic: string): Promise<APIResponse> {
   const response = await fetch(`${getAssetsURL()}/${assetID}/approve`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     credentials: 'include',
+    body: JSON.stringify({ mnemonic }),
   });
   if (response.status === 200) {
     return { success: true };

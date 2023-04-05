@@ -1,3 +1,5 @@
+/* eslint-disable react/jsx-props-no-spreading */
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -6,14 +8,31 @@ import Button from '../../components/Button/Button';
 import Input from '../../components/Input/Input';
 import { Approval, SLA } from '../../models/Asset.model';
 import AssetTransferService from '../../services/AssetTransferService';
+import Asset from '../../components/Asset/Asset';
+import localStorage from '../../utils/localStorage';
+import crypto from '../../utils/crypto';
 
 export default function GetAsset() {
   const [asset, setAsset] = React.useState({} as SLA);
   const [approvals, setApprovals] = React.useState({} as Approval);
   const [error, setError] = React.useState('');
+  const [showPasswordPrompt, setShowPasswordPrompt] = React.useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = (e: any) => {
+  const handleApprovals = (assetID: string) => {
+    AssetTransferService.getAssetApprovals(assetID)
+      .then((response) => {
+        if (response.success) {
+          setApprovals(response.approvals!);
+          setError('');
+        } else {
+          setApprovals({} as Approval);
+          setError(error.concat(`${response.message!}\n`));
+        }
+      });
+  };
+
+  const handleGetAsset = (e: any) => {
     e.preventDefault();
     const assetID = e.target.elements['asset-id'].value;
     AssetTransferService.getAsset(assetID)
@@ -26,13 +45,22 @@ export default function GetAsset() {
           setError(error.concat(`${response.message!}\n`));
         }
       });
-    AssetTransferService.getAssetApprovals(assetID)
+
+    handleApprovals(assetID);
+  };
+
+  const handleApproveAsset = async (e: any) => {
+    e.preventDefault();
+    const passphrase = e.target.elements.passphrase.value;
+
+    const mnemonicEnc = await localStorage.getLocalStorage('mnemonic');
+    const mnemonic = crypto.decrypt(mnemonicEnc, passphrase);
+
+    AssetTransferService.approveAsset(asset.id, mnemonic)
       .then((response) => {
         if (response.success) {
-          setApprovals(response.approvals!);
-          setError('');
+          handleApprovals(asset.id);
         } else {
-          setApprovals({} as Approval);
           setError(error.concat(`${response.message!}\n`));
         }
       });
@@ -40,7 +68,7 @@ export default function GetAsset() {
   return (
     <>
       <h1>Search Asset</h1>
-      <form action="GET" onSubmit={handleSubmit}>
+      <form action="GET" onSubmit={handleGetAsset}>
         <Input type="text" id="asset-id" name="Asset ID:" placeholder="asset2" required />
         <Button fullWidth>Search</Button>
       </form>
@@ -60,11 +88,19 @@ export default function GetAsset() {
             <th>Approvals</th>
           </tr>
           <tr>
-            <td><JsonViewer value={asset} rootName={asset.id} defaultInspectDepth={0} /></td>
+            <td><Asset {...asset} /></td>
             <td><JsonViewer value={approvals} rootName="Approved by" defaultInspectDepth={0} /></td>
+            <td><Button onClick={() => setShowPasswordPrompt(true)}>Approve</Button></td>
           </tr>
         </tbody>
       </table>
+      )}
+      { showPasswordPrompt
+      && (
+      <form action="POST" onSubmit={handleApproveAsset}>
+        <Input type="password" id="passphrase" name="Passphrase:" required />
+        <Button fullWidth>Confirm</Button>
+      </form>
       )}
     </>
   );
