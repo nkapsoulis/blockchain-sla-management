@@ -3,6 +3,7 @@ package ledger
 import (
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"log"
 
 	"github.com/hyperledger/fabric-private-chaincode/api/globals"
@@ -10,10 +11,13 @@ import (
 	"github.com/hyperledger/fabric-private-chaincode/api/utils"
 	"github.com/hyperledger/fabric-private-chaincode/lib"
 	"github.com/tyler-smith/go-bip32"
+	"github.com/hyperledger/fabric-ca/lib"
+
 )
 
 func InitLedger() {
 	client := pkg.NewClient(globals.Config)
+
 	_, err := client.Invoke("InitLedger")
 	if err != nil {
 		if err.Error() == "init has already ran" {
@@ -38,6 +42,7 @@ func InitLedger() {
 			log.Fatalln(err)
 		}
 		CreateUser(u, keys.PublicKey().B58Serialize())
+		fmt.Println(u, mnemonic)
 	}
 
 }
