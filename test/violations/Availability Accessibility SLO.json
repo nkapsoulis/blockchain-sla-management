@@ -1,0 +1,105 @@
+{
+  "name": "Availability Accessibility SLO",
+  "referenceId": "ASV_001",
+  "scale": "NOMINAL",
+  "expression": {
+    "expression": "CFA_002<PARAM_002"
+  },
+  "parameters": [
+    {
+      "name": "availability_limit",
+      "referenceId": "PARAM_002",
+      "unit": "%",
+      "parameter": "99.95"
+    }
+  ],
+  "underlyingMetrics": [
+    {
+      "name": "CloudServiceAvailability",
+      "referenceId": "CFA_002",
+      "unit": "%",
+      "scale": "RATIO",
+      "expression": {
+        "expression": "CFA_002 = ((BP_001 - UAP_001) / BP_001)"
+      },
+      "parameters": [
+        {
+          "name": "billing cycle",
+          "referenceId": "BP_001",
+          "unit": "month",
+          "parameter": "1"
+        }
+      ],
+      "underlyingMetrics": [
+        {
+          "name": "CloudServiceUnavailability",
+          "referenceId": "UAP_001",
+          "unit": "second",
+          "scale": "INTERVAL",
+          "expression": {
+            "expression": "UAP_001 = SUM(QDT_001)"
+          },
+          "underlyingMetrics": [
+            {
+              "name": "CloudServiceUnavailability_INTERVAL",
+              "referenceId": "QDT_001",
+              "unit": "second",
+              "scale": "INTERVAL",
+              "expression": {
+                "expression": "IF (QDT_001_TEMP > PARAM_001) THEN QDT_001 = QDT_001_TEMP",
+                "subExpressions": [
+                  {
+                    "expression": "IF (SAMPLE_001 = PARAM_002) THEN QDT_001_TEMP = delta(SAMPLE_001.timestamp)"
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "name": "boundary_period",
+                  "parameter": "60",
+                  "unit": "seconds",
+                  "scale": "INTERVAL",
+                  "referenceId": "PARAM_001"
+                },
+                {
+                  "name": "service_ping_sample_unreachable",
+                  "parameter": "unreachable",
+                  "scale": "NOMINAL",
+                  "referenceId": "PARAM_002"
+                },
+                {
+                  "name": "service_ping_sample_responses",
+                  "referenceId": "PARAM_003",
+                  "parameter": [
+                    "reachable",
+                    "unreachable"
+                  ],
+                  "scale": "ordinal"
+                }
+              ],
+              "rules": [
+                {
+                  "rule": "Services deployed in at least two availability zones",
+                  "note": "Region Unavailable and Region Unavailability mean that more than one Availability Zone in which you are running an instance, within the same Region, is Unavailable to you.",
+                  "referenceId": "QDT_R001"
+                }
+              ],
+              "samples": [
+                {
+                  "name": "service_ping_sample",
+                  "referenceId": "SAMPLE_001",
+                  "timestamp": "the timestamp of the sample",
+                  "scale": "NOMINAL",
+                  "value": "PARAM_003",
+                  "protocol": "ICMP",
+                  "operation": "ping",
+                  "note": "example sample to identify if a service is reachable or not"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

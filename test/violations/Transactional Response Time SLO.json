@@ -1,0 +1,100 @@
+{
+  "name": "Transactional Response Time SLO",
+  "referenceId": "MAS_001",
+  "scale": "NOMINAL",
+  "expression": {
+    "expression": "CFA_002 < PARAM_002"
+  },
+  "parameters": [
+    {
+      "name": "availability_limit",
+      "referenceId": "PARAM_002",
+      "unit": "%",
+      "parameter": "99.9"
+    }
+  ],
+  "underlyingMetrics": [
+    {
+      "name": "Monthly Uptime Percentage",
+      "referenceId": "CFA_002",
+      "unit": "%",
+      "scale": "RATIO",
+      "expression": {
+        "expression": "CFA_002 = 100 - AER_001"
+      },
+      "underlyingMetrics": [
+        {
+          "name": "Average Error Rate",
+          "referenceId": "AER_001",
+          "unit": "%",
+          "scale": "RATIO",
+          "expression": {
+            "expression": "AER_001 = AVG(HER_001) AND HER_001 belonging to BP_001"
+          },
+          "parameters": [
+            {
+              "name": "billing cycle",
+              "referenceId": "BP_001",
+              "unit": "month",
+              "parameter": "1"
+            }
+          ],
+          "underlyingMetrics": [
+            {
+              "name": "Hourly Error Rate",
+              "referenceId": "HER_001",
+              "unit": "%",
+              "scale": "RATIO",
+              "expression": {
+                "expression": "HER_001=HER_003/HER_002",
+                "subExpressions": [
+                  {
+                    "expression": "HER_002=SUM(SAMPLE_001 belonging to PARAM_001)",
+                    "note": "Number of samples within the boundary period"
+                  },
+                  {
+                    "expression": "HER_003=SUM(SAMPLE_001.value > PARAM_003 belonging to PARAM_001)",
+                    "note": "Number of error samples within the boundary period"
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "name": "boundary_period",
+                  "parameter": "3600",
+                  "unit": "seconds",
+                  "referenceId": "PARAM_001"
+                },
+                {
+                  "name": "GET BLOCK LIST LIMIT",
+                  "value": "60",
+                  "unit": "seconds",
+                  "referenceId": "PARAM_003"
+                },
+                {
+                  "name": "billing cycle",
+                  "referenceId": "BP_001",
+                  "unit": "month",
+                  "parameter": "1"
+                }
+              ],
+              "samples": [
+                {
+                  "name": "STORAGE GET BLOCK LIST API CALL response time",
+                  "referenceId": "SAMPLE_001",
+                  "timestamp": "the time stamp of the sample",
+                  "scale": "interval",
+                  "value": "the time needed to perform the operation",
+                  "unit": "seconds",
+                  "protocol": "REST",
+                  "operation": "GetBlockList",
+                  "note": "example sample to measure the response time of the service"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

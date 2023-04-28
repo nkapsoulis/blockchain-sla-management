@@ -1,0 +1,64 @@
+{
+  "name": "Incident Resolution Time SLO",
+  "referenceId": "IRT_001",
+  "scale": "NOMINAL",
+  "expression": {
+    "expression": "SIRT < SIRL"
+  },
+  "parameters": [
+    {
+      "name": "SevereIncidentResolutionLimit",
+      "referenceId": "SIRL",
+      "unit": "business days",
+      "scale": "NOMINAL",
+      "parameter": "2"
+    }
+  ],
+  "underlyingMetrics": [
+    {
+      "name": "SevereIncidentResolutionTime",
+      "referenceId": "SIRT",
+      "unit": "business days",
+      "scale": "INTERVAL",
+      "expression": {
+        "expression": "SIRT = ((SAMPLE_001.incident_resolution_time - SAMPLE_001.incident_report_time)/86400) - PBH"
+      },
+      "underlyingMetrics": [
+        {
+          "name": "ProviderBankHolidays",
+          "referenceId": "PBH",
+          "unit": "days",
+          "scale": "NOMINAL",
+          "expression": {
+            "expression": "PBH = PBH + 1 for each day belonging to PBH_List"
+          },
+          "parameters": [
+            {
+              "name": "ProviderBankHolidays_List",
+              "referenceId": "PBH_List",
+              "scale": "NOMINAL",
+              "parameters": [
+                "2016-03-25",
+                "2016-10-28",
+                "2016-03-20",
+                "2016-03-13"
+              ]
+            }
+          ],
+          "samples": [
+            {
+              "name": "An incident reported by the customer",
+              "referenceId": "SAMPLE_001",
+              "scale": "NOMINAL",
+              "unit": "date/time",
+              "incident_report_time": "the date/time the incident was first reported by the customer",
+              "incident_response_time": "the date/time the provider first responded to the incident",
+              "incident_resolution_time": "the date/time the provider resolved the incident",
+              "note": "example of a sample to measure the resolution time for an incident "
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

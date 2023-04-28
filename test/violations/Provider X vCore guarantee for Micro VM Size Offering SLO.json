@@ -1,0 +1,84 @@
+{
+  "name": "Provider X vCore guarantee for Micro VM Size Offering SLO",
+  "referenceId": "MAS_001",
+  "scale": "NOMINAL",
+  "expression": {
+    "expression": "STD_001 < PARAM_002 & AVG_001><PARAM_003"
+  },
+  "parameters": [
+    {
+      "name": "deviation_limit",
+      "referenceId": "PARAM_002",
+      "unit": "%",
+      "parameter": "10"
+    },
+    {
+      "name": "average_value_limit",
+      "referenceId": "PARAM_003",
+      "unit": "operations per second",
+      "parameter": "100*10^9"
+    }
+  ],
+  "underlyingMetrics": [
+    {
+      "name": "Average Standard Deviation of Benchmarked Values as % of mean value",
+      "referenceId": "STD_001",
+      "unit": "%",
+      "scale": "RATIO",
+      "expression": {
+        "expression": "STD_001= 100*average[(abs(SAMPLE_001- AVG_001)/AVG_001]"
+      },
+      "parameters": [
+        {
+          "name": "billing cycle",
+          "referenceId": "BP_001",
+          "unit": "month",
+          "parameter": "1"
+        }
+      ],
+      "underlyingMetrics": [
+        {
+          "name": "Average Value of Benchmark Execution",
+          "referenceId": "AVG_001",
+          "unit": "",
+          "scale": "interval",
+          "expression": {
+            "expression": "AVG_001= average(SAMPLE_001) belonging in BP_001"
+          },
+          "parameters": [
+            {
+              "name": "workload_size",
+              "referenceId": "PARAM_004",
+              "parameter": [
+                "small",
+                "default",
+                "large"
+              ],
+              "scale": "ordinal"
+            },
+            {
+              "name": "measurement_frequency",
+              "referenceId": "PARAM_005",
+              "unit": "perday",
+              "value": "3"
+            }
+          ],
+          "samples": [
+            {
+              "name": "DaCapo Benchmark",
+              "referenceId": "SAMPLE_001",
+              "scale": "interval",
+              "value": "throughput",
+              "unit": "operations/sec",
+              "operation": "Avrora",
+              "workload_type": "PARAM_004",
+              "workload_value": "default",
+              "frequency": "PARAM_005",
+              "note": "example definition of a benchmark test"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
