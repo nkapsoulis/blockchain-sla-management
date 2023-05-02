@@ -10,6 +10,7 @@ import (
 	"github.com/decred/dcrd/dcrec/secp256k1"
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 	"github.com/hyperledger/fabric-private-chaincode/lib"
+	iso19086 "github.com/hyperledger/fabric-private-chaincode/lib/iso-19086"
 	"github.com/tyler-smith/go-bip32"
 )
 
@@ -18,9 +19,21 @@ type SmartContract struct {
 	contractapi.Contract
 }
 
-type cc_SLA struct {
-	lib.SLA
+type SLA struct {
+	iso19086.SLA
+}
+
+type Metric struct {
+	iso19086.Metrics
+}
+
+type Approval struct {
 	lib.Approval
+}
+
+type cc_SLA struct {
+	SLA
+	Approval
 	RefundValue     int     `json:"RefundValue"` // compensation amount
 	TotalViolations []int   `json:"TotalViolations"`
 	DailyValue      float64 `json:"DailyValue"`
@@ -103,15 +116,15 @@ func (s *SmartContract) Approve(ctx contractapi.TransactionContextInterface, sla
 	}
 
 	// If the user is not a client nor a provider then return
-	if contract.SLA.Details.Provider.Name != userName &&
-		contract.SLA.Details.Client.Name != userName {
+	if contract.SLA.Provider.Name != userName &&
+		contract.SLA.Client.Name != userName {
 		return fmt.Errorf("the contract does not include the provided user")
 	}
 
 	// Now we know that the user is either a client or a provider
 	// so we check one of them.
 	client := false
-	if contract.SLA.Details.Client.Name == userName {
+	if contract.SLA.Client.Name == userName {
 		client = true
 	}
 
@@ -165,23 +178,23 @@ func (s *SmartContract) Approve(ctx contractapi.TransactionContextInterface, sla
 
 // CreateOrUpdateContract issues a new Contract to the world state with given details.
 func (s *SmartContract) CreateOrUpdateContract(ctx contractapi.TransactionContextInterface, contractJSON string) error {
-	var sla lib.SLA
+	var sla SLA
 	err := json.Unmarshal([]byte(contractJSON), &sla)
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal json: %v", err)
 	}
 
-	exists, err := s.UserExists(ctx, sla.Details.Provider.Name)
+	exists, err := s.UserExists(ctx, sla.Provider.Name)
 	if err != nil {
-		return fmt.Errorf("provider account %s could not be read: %v", sla.Details.Provider.ID, err)
+		return fmt.Errorf("provider account %s could not be read: %v", sla.Provider.ID, err)
 	}
 	if !exists {
 		return fmt.Errorf("provider does not exist")
 	}
 
-	exists, err = s.UserExists(ctx, sla.Details.Client.Name)
+	exists, err = s.UserExists(ctx, sla.Client.Name)
 	if err != nil {
-		return fmt.Errorf("client account %s could not be read: %v", sla.Details.Client.ID, err)
+		return fmt.Errorf("client account %s could not be read: %v", sla.Client.ID, err)
 	}
 	if !exists {
 		return fmt.Errorf("client does not exist")
@@ -206,18 +219,17 @@ func (s *SmartContract) CreateOrUpdateContract(ctx contractapi.TransactionContex
 		dailyViolations = contract.DailyViolations
 		dailyValue = contract.DailyValue
 	} else {
-		s.addProvidedSLA(ctx, sla.Details.Provider.Name, sla.ID)
-		s.addConsumedSLA(ctx, sla.Details.Client.Name, sla.ID)
+		s.addProvidedSLA(ctx, sla.Provider.Name, sla.ID)
+		s.addConsumedSLA(ctx, sla.Client.Name, sla.ID)
 	}
 
-	approval := lib.Approval{
-		ProviderApproved: false,
-		ConsumerApproved: false,
-	}
+	approval := new(Approval)
+	approval.ProviderApproved = false
+	approval.ConsumerApproved = false
 
 	contract := cc_SLA{
 		SLA:             sla,
-		Approval:        approval,
+		Approval:        *approval,
 		RefundValue:     value,
 		TotalViolations: totalViolations,
 		DailyViolations: dailyViolations,
@@ -288,61 +300,6 @@ func (s *SmartContract) ContractExists(ctx contractapi.TransactionContextInterfa
 	return ContractJSON != nil, nil
 }
 
-// SLAViolated changes the number of violations that have happened.
-func (s *SmartContract) SLAViolated(ctx contractapi.TransactionContextInterface, violation string) error {
-	var vio lib.Violation
-	err := json.Unmarshal([]byte(violation), &vio)
-	if err != nil {
-		return fmt.Errorf("failed to unmarshal json: %v", err)
-	}
-
-	contract, err := s.GetContract(ctx, vio.SLAID)
-	if err != nil {
-		return err
-	}
-	if contract.SLA.State == "stopped" {
-		return fmt.Errorf("the contract %s is completed, no violations can happen", vio.SLAID)
-	}
-
-	if !contract.ConsumerApproved || !contract.ProviderApproved {
-		return fmt.Errorf("the contract %s has not been validated by the provider or the consumer", vio.SLAID)
-	}
-
-	switch vio.GuaranteeID {
-	case "40":
-		// This should happen only the first time the SLA is violated, but it's the time
-		// we actually have information about the violation itself.
-		if len(contract.DailyViolations) < 3 {
-			contract.DailyViolations = make([]int, 3)
-			contract.TotalViolations = make([]int, 3)
-		}
-		switch vio.ImportanceName {
-		case "Warning":
-			contract.DailyValue += (1 - 0.985) * float64(contract.RefundValue)
-			contract.DailyViolations[0] += 1
-		case "Serious":
-			contract.DailyValue += (1 - 0.965) * float64(contract.RefundValue)
-			contract.DailyViolations[1] += 1
-		case "Catastrophic":
-			contract.DailyValue += (1 - 0.945) * float64(contract.RefundValue)
-			contract.DailyViolations[2] += 1
-		}
-	// If we don't know the type of guarantee
-	default:
-		contract.DailyViolations[0] += 1
-	}
-	ContractJSON, err := json.Marshal(contract)
-	if err != nil {
-		return err
-	}
-
-	if err != nil {
-		return fmt.Errorf("could not transfer tokens from violation: %v", err)
-	}
-
-	return ctx.GetStub().PutState(fmt.Sprintf("contract_%v", vio.SLAID), ContractJSON)
-}
-
 func (s *SmartContract) RefundSLA(ctx contractapi.TransactionContextInterface, id string) error {
 	contract, err := s.GetContract(ctx, id)
 	if err != nil {
@@ -357,7 +314,7 @@ func (s *SmartContract) RefundSLA(ctx contractapi.TransactionContextInterface, i
 		return fmt.Errorf("the contract %s has not been validated by the provider or the consumer", contract.ID)
 	}
 
-	err = s.transferTokens(ctx, contract.SLA.Details.Provider.Name, contract.SLA.Details.Client.Name, contract.DailyValue)
+	err = s.transferTokens(ctx, contract.SLA.Provider.Name, contract.SLA.Client.Name, contract.DailyValue)
 	if err != nil {
 		return err
 	}
