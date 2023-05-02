@@ -3,12 +3,17 @@ package ipfs
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"strings"
 
-	"github.com/hyperledger/fabric-private-chaincode/lib"
+	iso19086 "github.com/hyperledger/fabric-private-chaincode/lib/iso-19086"
 	shell "github.com/ipfs/go-ipfs-api"
 )
+
+type Metric struct {
+	iso19086.Metrics
+}
 
 func CreateRootFolder(ctx context.Context, sh *shell.Shell) error {
 	err := sh.FilesMkdir(ctx, "/sla", shell.FilesMkdir.Parents(true))
@@ -29,14 +34,15 @@ func CreateSLAFolder(ctx context.Context, sh *shell.Shell, id string) error {
 	return createIndexFile(ctx, sh, "/sla/"+id)
 }
 
-func AddViolation(ctx context.Context, sh *shell.Shell, v lib.Violation) error {
-	path := "/sla/" + v.SLAID + "/" + v.ID
+func AddMetric(ctx context.Context, sh *shell.Shell, v iso19086.Metrics) error {
+	path := "/sla/" + v.SLAID
+	metricPath := path + "/" + v.ID
 
-	violationBytes, err := json.Marshal(v)
+	metricBytes, err := json.Marshal(v)
 	if err != nil {
 		return err
 	}
-	err = sh.FilesWrite(ctx, path, strings.NewReader(string(violationBytes)))
+	err = sh.FilesWrite(ctx, metricPath, strings.NewReader(string(metricBytes)), shell.FilesWrite.Create(true))
 	if err != nil {
 		return err
 	}
@@ -45,7 +51,6 @@ func AddViolation(ctx context.Context, sh *shell.Shell, v lib.Violation) error {
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -63,41 +68,49 @@ func ReadFile(ctx context.Context, sh *shell.Shell, path string) (string, error)
 	return string(data), nil
 }
 
-func GetUnreadViolations(ctx context.Context, sh *shell.Shell, id string) ([]lib.Violation, error) {
+func GetUnreadMetrics(ctx context.Context, sh *shell.Shell, id string) ([]byte, error) {
 	path := "/sla/" + id
-	violationIDs, err := parseIndexFile(ctx, sh, path)
+	metricIDs, err := parseIndexFile(ctx, sh, path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("cannot read index file: %v", err)
 	}
 
-	var violations []lib.Violation
-	for _, vid := range violationIDs {
+	var metrics []Metric
+	for _, vid := range metricIDs {
 		data, err := ReadFile(ctx, sh, path+"/"+vid)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("cannot read violation %v file: %v", vid, err)
 		}
-		var v lib.Violation
+		var v Metric
 		err = json.Unmarshal([]byte(data), &v)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("cannot unmarshal %v file: %v", v.ID, err)
 		}
-		violations = append(violations, v)
+		metrics = append(metrics, v)
 	}
-
-	err = overwriteIndexFile(ctx, sh, path, "")
+	metricsBytes, err := json.Marshal(metrics)
 	if err != nil {
 		return nil, err
 	}
-	return violations, nil
+	return metricsBytes, nil
 }
 
-func ReadAllViolations(ctx context.Context, sh *shell.Shell, id string) ([]lib.Violation, error) {
+func OverwriteUnreadViolations(ctx context.Context, sh *shell.Shell, id, data string) error {
+	path := "/sla/" + id
+	err := overwriteIndexFile(ctx, sh, path, data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func ReadAllMetrics(ctx context.Context, sh *shell.Shell, id string) ([]Metric, error) {
 	files, err := sh.FilesLs(ctx, "/sla/"+id)
 	if err != nil {
 		return nil, err
 	}
 
-	var violations []lib.Violation
+	var metrics []Metric
 	for _, f := range files {
 		if f.Name == "index" {
 			continue
@@ -107,13 +120,12 @@ func ReadAllViolations(ctx context.Context, sh *shell.Shell, id string) ([]lib.V
 		if err != nil {
 			return nil, err
 		}
-		var v lib.Violation
+		var v Metric
 		err = json.Unmarshal([]byte(d), &v)
 		if err != nil {
 			return nil, err
 		}
-		violations = append(violations, v)
+		metrics = append(metrics, v)
 	}
-	return violations, nil
-
+	return metrics, nil
 }

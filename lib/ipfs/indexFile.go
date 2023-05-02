@@ -20,7 +20,15 @@ func writeToIndexFile(ctx context.Context, sh *shell.Shell, path, data string) e
 
 func overwriteIndexFile(ctx context.Context, sh *shell.Shell, path, data string) error {
 	indexPath := path + "/index"
-	return sh.FilesWrite(ctx, indexPath, strings.NewReader(data), shell.FilesWrite.Offset(0))
+	err := sh.FilesRm(ctx, indexPath, false)
+	if err != nil {
+		return err
+	}
+	err = createIndexFile(ctx, sh, path)
+	if err != nil {
+		return err
+	}
+	return writeToIndexFile(ctx, sh, path, data)
 }
 
 func parseIndexFile(ctx context.Context, sh *shell.Shell, path string) ([]string, error) {
@@ -35,5 +43,5 @@ func parseIndexFile(ctx context.Context, sh *shell.Shell, path string) ([]string
 		return []string{}, err
 	}
 
-	return strings.Split(string(data), " "), nil
+	return strings.Split(strings.TrimSpace(string(data)), " "), nil
 }
