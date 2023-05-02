@@ -11,7 +11,7 @@ import (
 	"github.com/hyperledger/fabric-private-chaincode/clients/api/models"
 	"github.com/hyperledger/fabric-private-chaincode/clients/utils"
 	"github.com/hyperledger/fabric-private-chaincode/clients/utils/ledger"
-	"github.com/hyperledger/fabric-private-chaincode/lib"
+	t "github.com/hyperledger/fabric-private-chaincode/clients/utils/types"
 )
 
 type AssetURI struct {
@@ -51,7 +51,7 @@ func GetUserSLAs(c *gin.Context) {
 
 	user := ledger.GetUser(globals.Config, username.(string))
 
-	var SLAs []lib.SLA
+	var SLAs []t.SLA
 
 	for _, v := range getIDsFromString(user.ProviderOf) {
 		if v == "" {
@@ -84,14 +84,14 @@ func CreateSLA(c *gin.Context) {
 	session := sessions.Default(c)
 	username := session.Get(globals.Userkey)
 
-	var sla lib.SLA
+	var sla t.SLA
 
 	if err := c.BindJSON(&sla); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	if sla.Details.Provider.Name != username {
+	if sla.Provider.Name != username {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "User is not the provider of the SLA"})
 		return
 	}
@@ -188,7 +188,7 @@ func ApproveSLA(c *gin.Context) {
 
 }
 
-func slaInUserContracts(user lib.User, slaId string) bool {
+func slaInUserContracts(user t.User, slaId string) bool {
 	// Slice of size 1 means that the delimiter was not found in the string
 	for _, sla := range getIDsFromString(user.ClientOf) {
 		if sla == slaId {

@@ -9,7 +9,8 @@ import (
 	"github.com/hyperledger/fabric-private-chaincode/clients/api/models"
 	"github.com/hyperledger/fabric-private-chaincode/clients/utils"
 	"github.com/hyperledger/fabric-private-chaincode/clients/utils/ledger"
-	"github.com/hyperledger/fabric-private-chaincode/lib"
+	t "github.com/hyperledger/fabric-private-chaincode/clients/utils/types"
+
 )
 
 // login ensures the user is logged in
@@ -41,7 +42,7 @@ func Login(c *gin.Context) {
 
 	userLedger := ledger.GetUser(globals.Config, userAPI.Name)
 
-	if userLedger == (lib.User{}) {
+	if userLedger == (t.User{}) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User does not exist"})
 		return
 	}
