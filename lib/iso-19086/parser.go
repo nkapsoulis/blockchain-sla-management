@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"reflect"
+	"strconv"
 	"strings"
 )
 
@@ -18,20 +19,35 @@ func ReadSLA(slaData []byte) (*SLA, error) {
 }
 
 func ReadMetric(metricData []byte) (*Metrics, error) {
-	m := new(Metrics)
-	err := json.Unmarshal(metricData, m)
+	var m Metrics
+	err := json.Unmarshal(metricData, &m)
 	if err != nil {
 		return nil, err
 	}
-	return m, nil
+	fmt.Println(m)
+	return &m, nil
 }
 
-func Parse(sla *SLA, metric *Metrics) {
-	log.Println(sla.ID)
-	ParseMetrics(*metric)
-	params := ParseParameters(sla.SLO.Parameters)
-	ParseExpression(sla.SLO.Expression.Expression, *params)
+func Parse(slaData, metricData []byte) (bool, error) {
+	sla, err := ReadSLA(slaData)
+	if err != nil {
+		return false, err
+	}
 
+	metric, err := ReadMetric(metricData)
+	if err != nil {
+		return false, err
+	}
+
+	log.Println(sla.ID)
+	metrics := ParseMetrics(metric)
+	params := ParseParameters(sla.SLO.Parameters)
+	violated, err := ParseExpression(sla.SLO.Expression.Expression, *params, *metrics)
+	if err != nil {
+		return false, err
+	}
+
+	return violated, nil
 }
 
 func ParseParameters(params []Parameter) *map[string]string {
@@ -43,23 +59,21 @@ func ParseParameters(params []Parameter) *map[string]string {
 	return &mapping
 }
 
-func ParseMetrics(metrics Metrics) {
-	// mapping := make(map[string]string)
-	fields := reflect.VisibleFields(reflect.TypeOf(metrics))
-	value := reflect.ValueOf(metrics)
-
-	fmt.Println(fields)
-	fmt.Println(value)
-
-	// for _, field := range fields {
-	// 	f := value.FieldByName(field.Name)
-	// 	if f.IsValid() {
-	// 		mapping[field.Name] = metrics[field.Name]
-	// 	}
-	// }
+func ParseMetrics(metrics *Metrics) *map[string]string {
+	mapping := make(map[string]string)
+	fields := reflect.VisibleFields(reflect.TypeOf(*metrics))
+	value := reflect.ValueOf(metrics).Elem()
+	for _, field := range fields {
+		if field.Name == "ID" || field.Name == "SLAID" {
+			continue
+		}
+		f := value.FieldByName(field.Name)
+		mapping[field.Name] = f.Interface().(string)
+	}
+	return &mapping
 }
 
-func ParseExpression(expr string, params map[string]string) {
+func ParseExpression(expr string, params, metric map[string]string) (bool, error) {
 	parts := strings.Split(strings.TrimSpace(expr), " ")
 	fmt.Println(parts)
 
@@ -67,7 +81,31 @@ func ParseExpression(expr string, params map[string]string) {
 		param, ok := params[p]
 		if ok {
 			parts[i] = param
+			continue
+		}
+
+		param, ok = metric[p]
+		if ok {
+			parts[i] = param
 		}
 	}
-	fmt.Println(parts)
+
+	p1, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return false, err
+	}
+
+	p2, err := strconv.Atoi(parts[2])
+	if err != nil {
+		return false, err
+	}
+
+	switch parts[1] {
+	case "<":
+		return !(p1 < p2), nil
+	case ">":
+		return !(p1 > p2), nil
+	default:
+		return false, fmt.Errorf("unknown operand %v", parts[1])
+	}
 }
