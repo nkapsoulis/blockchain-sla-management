@@ -76,6 +76,11 @@ func GetUnreadMetrics(ctx context.Context, sh *shell.Shell, id string) ([]byte, 
 	}
 
 	var metrics []Metric
+
+	if metricIDs == nil {
+		return nil, nil
+	}
+
 	for _, vid := range metricIDs {
 		data, err := ReadFile(ctx, sh, path+"/"+vid)
 		if err != nil {

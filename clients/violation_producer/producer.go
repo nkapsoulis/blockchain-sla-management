@@ -64,6 +64,20 @@ func main() {
 	}
 }
 
+func CreateFile(metric iso19086parser.Metrics) {
+	f, err := os.Create("./metrics/" + metric.ID + ".json")
+	if err != nil {
+		panic(err)
+	}
+
+	data, err := json.Marshal(metric)
+	if err != nil {
+		panic(err)
+	}
+	f.Write(data)
+	f.Close()
+}
+
 // func CreateAssets(nAssets int) []lib.SLA {
 // 	states := []string{"started", "ongoing"} // , "stopped", "deleted"}
 // 	types := []string{"agreement"}

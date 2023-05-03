@@ -123,13 +123,14 @@ func CheckForViolation(config *pkg.Config, metric sla_types.Metric) error {
 	client := pkg.NewClient(config)
 	fmt.Printf("Received metric: %v\n", metric)
 
-	violationJSON, err := json.Marshal(metric)
+	metricJSON, err := json.Marshal(metric)
 	if err != nil {
 		return err
 	}
-	_, err = client.Invoke("SLAViolated", string(violationJSON))
+	violated, err := client.Invoke("CheckIfSLAViolated", string(metricJSON))
 	if err != nil {
 		return err
 	}
+	fmt.Println("violated: ", violated)
 	return nil
 }

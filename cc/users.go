@@ -124,7 +124,7 @@ func (s *SmartContract) addConsumedSLA(ctx contractapi.TransactionContextInterfa
 	return ctx.GetStub().PutState(fmt.Sprintf("user_%v", userId), userBytes)
 }
 
-func (s *SmartContract) slaInUserContracts(ctx contractapi.TransactionContextInterface, userId, slaId string) (bool, error) {
+func (s *SmartContract) SlaInUserContracts(ctx contractapi.TransactionContextInterface, userId, slaId string) (bool, error) {
 	user, err := s.ReadUser(ctx, userId)
 	if err != nil {
 		return false, fmt.Errorf("failed to read user %v", err)

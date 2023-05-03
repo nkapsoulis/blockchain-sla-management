@@ -47,6 +47,11 @@ func main() {
 				continue
 			}
 
+			if metricsBytes == nil {
+				log.Printf("No metrics to read in sla %v folder\n", d.Name)
+				continue
+			}
+
 			var metrics []t.Metric
 			err = json.Unmarshal(metricsBytes, &metrics)
 			if err != nil {

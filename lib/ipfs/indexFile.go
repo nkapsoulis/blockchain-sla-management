@@ -43,5 +43,9 @@ func parseIndexFile(ctx context.Context, sh *shell.Shell, path string) ([]string
 		return []string{}, err
 	}
 
+	if string(data) == "" || string(data) == " " {
+		return nil, nil
+	}
+
 	return strings.Split(strings.TrimSpace(string(data)), " "), nil
 }

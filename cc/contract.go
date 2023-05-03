@@ -165,7 +165,7 @@ func (s *SmartContract) Approve(ctx contractapi.TransactionContextInterface, sla
 			contract.Approval.ProviderApproved = true
 		}
 	} else {
-		return fmt.Errorf("Signature could not be verified")
+		return fmt.Errorf("signature could not be verified")
 	}
 
 	slaContractJSON, err := json.Marshal(contract)
