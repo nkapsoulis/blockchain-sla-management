@@ -78,7 +78,7 @@ The system consists of the following components:
 
 1. *FPC Chaincode Pkg:*
    This component bundles together the chaincode enclave and the enclave endorsement validation logic into a fabric chaincode.
-   It also includes a shim component which 
+   It also includes a shim component which
    (a) proxies the chaincode enclave shim functionality, e.g., access to ledger, to the fabric peer, and
    (b) dispatches FPC flows to either the chaincode enclave (via `__invoke` queries) or to the enclave endorsement validation logic (via `__endorse` transactions).
 
@@ -125,8 +125,7 @@ Additional Google documents provide details on FPC 1.0:
 - [`common`](common/): Shared C/C++ code
 - [`config`](config/): SGX configuration
 - [`docs`](docs/): Documentation and design documents
-- [`ecc_enclave`](ecc_enclave/): C/C++ code for chaincode enclave
-    (including the trusted code running inside an enclave)
+- [`ecc_enclave`](ecc_enclave/): C/C++ code for chaincode enclave (including the trusted code running inside an enclave)
 - [`ecc`](ecc/): Go code for FPC chaincode package, including
     dispatcher and (high-level code for) enclave endorsement validation.
 - [`ecc_go`](ecc_go/): Go code for FPC Go Chaincode Support
@@ -172,7 +171,7 @@ Finally, we give you a starting point for [Developing with Fabric Private Chainc
 ### Clone Fabric Private Chaincode
 
 Clone the code and make sure it is on your `$GOPATH`. (Important: we assume in this documentation and default configuration that your `$GOPATH` has a _single_ root-directoy!)
-We use `$FPC_PATH` to refer to the Fabric Private Chaincode repository in your filesystem.  
+We use `$FPC_PATH` to refer to the Fabric Private Chaincode repository in your filesystem.
 ```bash
 export FPC_PATH=$GOPATH/src/github.com/hyperledger/fabric-private-chaincode
 git clone --recursive https://github.com/hyperledger/fabric-private-chaincode.git $FPC_PATH
@@ -199,7 +198,7 @@ First make sure your host has
 Once you have cloned the repository, to pull the docker image and start the development container execute the following:
 ```bash
 cd $FPC_PATH/utils/docker
-make pull-dev 
+make pull-dev
 make run-dev
 ```
 
@@ -212,7 +211,7 @@ This allows you to edit the content of the repository using your favorite editor
 In order to build the development image manually you can use the following commands. Note that this process may take some time.
 ```bash
 cd $FPC_PATH/utils/docker
-make build-dev 
+make build-dev
 make run-dev
 ```
 
@@ -246,7 +245,7 @@ Now you are ready to start development *within* the container. Continue with bui
 
 ### Option 2: Setting up your system to do local development
 
-As an alternative to the Docker-based FPC development environment you can install and manage all necessary software dependencies which are required to compile and run FPC.  
+As an alternative to the Docker-based FPC development environment you can install and manage all necessary software dependencies which are required to compile and run FPC.
 
 #### Requirements
 
@@ -258,9 +257,9 @@ Make sure that you have the following required dependencies installed:
 * [Go](https://golang.org/) 1.17.5 or higher
 
 * Docker 18.09 (or higher) and docker-compose 1.25.x (or higher)
-  Note that version from Ubuntu 18.04 is not recent enough!  To upgrade, install a recent version following the instructions from [docker.com](https://docs.docker.com/compose/install/), e.g., for version 1.25.4 execute	
-  ```bash	
-  sudo curl -L "https://github.com/docker/compose/releases/download/1.25.4/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose	
+  Note that version from Ubuntu 18.04 is not recent enough!  To upgrade, install a recent version following the instructions from [docker.com](https://docs.docker.com/compose/install/), e.g., for version 1.25.4 execute
+  ```bash
+  sudo curl -L "https://github.com/docker/compose/releases/download/1.25.4/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
   sudo chmod +x /usr/local/bin/docker-compose
   ```
 
@@ -268,7 +267,7 @@ Make sure that you have the following required dependencies installed:
   ```bash
   sudo curl -L "https://github.com/docker/compose/releases/download/1.25.4/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
   sudo chmod +x /usr/local/bin/docker-compose
-  ``` 
+  ```
 
 * yq v3.x (newer versions, v4.x and higher, are currently *not* supported!)
   You can install `yq` v3 via `go get`.
@@ -359,7 +358,7 @@ Make sure the source of Fabric is in your `$GOPATH`.
 ## Build Fabric Private Chaincode
 
 Once you have your development environment up and running (i.e., using our docker-based setup or install all dependencies on your machine) you can build FPC and start developing your own FPC application.
-Note by default we build FPC with SGX simulation mode. For SGX hardware-mode support please also read the [Intel SGX Attestation Support](#intel-sgx-attestation-support) Section below. 
+Note by default we build FPC with SGX simulation mode. For SGX hardware-mode support please also read the [Intel SGX Attestation Support](#intel-sgx-attestation-support) Section below.
 
 To build all required FPC components and run the integration tests run the following:
 ```bash
@@ -448,7 +447,7 @@ Next you can build `ercc` using the following command:
 GOOS=linux make -C $FPC_PATH/ercc build docker
 ```
 
-For building a chaincode, for instance `$FPC_PATH/samples/chaincode/kv-test-go`, just run: 
+For building a chaincode, for instance `$FPC_PATH/samples/chaincode/kv-test-go`, just run:
 ```bash
 GOOS=linux make -C $FPC_PATH/samples/chaincode/kv-test-go with_go docker
 ```
