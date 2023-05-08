@@ -18,6 +18,7 @@ type Config struct {
 	OrdererCA               string
 	FpcPath                 string
 	ChaincodeId             string
+	PublicChaincodeId       string
 	ChannelId               string
 	GatewayConfigPath       string
 }

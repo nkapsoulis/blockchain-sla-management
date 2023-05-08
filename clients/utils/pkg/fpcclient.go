@@ -22,8 +22,8 @@ type Client struct {
 	contract fpc.Contract
 }
 
-func NewClient(config *Config) *Client {
-	return &Client{contract: newContract(config)}
+func NewClient(config *Config, chaincode string) *Client {
+	return &Client{contract: newContract(config, chaincode)}
 }
 
 func findSigningCert(mspConfigPath string) (string, error) {
@@ -76,7 +76,7 @@ func populateWallet(wallet *gateway.Wallet, config *Config) error {
 	return wallet.Put("appUser", identity)
 }
 
-func newContract(config *Config) fpc.Contract {
+func newContract(config *Config, chaincode string) fpc.Contract {
 
 	wallet := gateway.NewInMemoryWallet()
 	err := populateWallet(wallet, config)
@@ -99,7 +99,16 @@ func newContract(config *Config) fpc.Contract {
 	}
 
 	// Get FPC Contract
-	contract := fpc.GetContract(network, config.ChaincodeId)
+	var contract fpc.Contract
+	switch chaincode {
+	case "private":
+		contract = fpc.GetContract(network, config.ChaincodeId)
+	case "public":
+		contract = fpc.GetContract(network, config.PublicChaincodeId)
+	default:
+		contract = fpc.GetContract(network, config.PublicChaincodeId)
+	}
+
 	return contract
 }
 

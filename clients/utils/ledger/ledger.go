@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strconv"
 
 	"github.com/hyperledger/fabric-private-chaincode/clients/utils"
 	"github.com/hyperledger/fabric-private-chaincode/clients/utils/pkg"
@@ -14,7 +15,7 @@ import (
 )
 
 func InitLedger(config *pkg.Config, passphrase string) {
-	client := pkg.NewClient(config)
+	client := pkg.NewClient(config, "public")
 
 	_, err := client.Invoke("InitLedger")
 	if err != nil {
@@ -46,7 +47,7 @@ func InitLedger(config *pkg.Config, passphrase string) {
 }
 
 func GetUser(config *pkg.Config, name string) sla_types.User {
-	client := pkg.NewClient(config)
+	client := pkg.NewClient(config, "public")
 	res, err := client.Query("ReadUser", name)
 	if err != nil {
 		log.Fatalln(err)
@@ -58,7 +59,7 @@ func GetUser(config *pkg.Config, name string) sla_types.User {
 }
 
 func CreateUser(config *pkg.Config, name, publicKey string) {
-	client := pkg.NewClient(config)
+	client := pkg.NewClient(config, "public")
 	_, err := client.Invoke("CreateUser", name, publicKey, "500")
 	if err != nil {
 		log.Fatalln(err)
@@ -66,7 +67,7 @@ func CreateUser(config *pkg.Config, name, publicKey string) {
 }
 
 func GetSLA(config *pkg.Config, id string) (sla_types.SLA, error) {
-	client := pkg.NewClient(config)
+	client := pkg.NewClient(config, "public")
 	res, err := client.Query("ReadSLA", id)
 	if err != nil {
 		return sla_types.SLA{}, err
@@ -81,7 +82,7 @@ func GetSLA(config *pkg.Config, id string) (sla_types.SLA, error) {
 }
 
 func CreateSLA(config *pkg.Config, sla sla_types.SLA) error {
-	client := pkg.NewClient(config)
+	client := pkg.NewClient(config, "public")
 
 	slaJson, err := json.Marshal(sla)
 	if err != nil {
@@ -95,7 +96,7 @@ func CreateSLA(config *pkg.Config, sla sla_types.SLA) error {
 }
 
 func GetSLAApproval(config *pkg.Config, id string) (sla_types.Approval, error) {
-	client := pkg.NewClient(config)
+	client := pkg.NewClient(config, "public")
 	res, err := client.Query("GetApprovals", id)
 	if err != nil {
 		return sla_types.Approval{}, err
@@ -110,7 +111,7 @@ func GetSLAApproval(config *pkg.Config, id string) (sla_types.Approval, error) {
 }
 
 func Approve(config *pkg.Config, id, username string, signature []byte) error {
-	client := pkg.NewClient(config)
+	client := pkg.NewClient(config, "public")
 	_, err := client.Invoke("Approve", id, username, hex.EncodeToString(signature))
 	if err != nil {
 		return err
@@ -119,18 +120,32 @@ func Approve(config *pkg.Config, id, username string, signature []byte) error {
 	return nil
 }
 
-func CheckForViolation(config *pkg.Config, metric sla_types.Metric) error {
-	client := pkg.NewClient(config)
-	fmt.Printf("Received metric: %v\n", metric)
+func CheckForViolation(config *pkg.Config, metric sla_types.Metric) (bool, error) {
+	client := pkg.NewClient(config, "private")
 
 	metricJSON, err := json.Marshal(metric)
 	if err != nil {
-		return err
+		return false, err
 	}
-	violated, err := client.Invoke("CheckIfSLAViolated", string(metricJSON))
+	violatedStr, err := client.Invoke("CheckIfSLAViolated", string(metricJSON))
+	if err != nil {
+		return false, err
+	}
+
+	violated, err := strconv.ParseBool(violatedStr)
+	if err != nil {
+		return false, err
+	}
+
+	fmt.Println("violated: ", violated)
+	return violated, nil
+}
+
+func SLAViolated(config *pkg.Config, id string) error {
+	client := pkg.NewClient(config, "public")
+	_, err := client.Invoke("SLAViolated", id)
 	if err != nil {
 		return err
 	}
-	fmt.Println("violated: ", violated)
 	return nil
 }

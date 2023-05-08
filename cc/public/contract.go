@@ -7,7 +7,8 @@ import (
 	"fmt"
 	"math/rand"
 
-	"github.com/decred/dcrd/dcrec/secp256k1"
+	secp256k1 "github.com/decred/dcrd/dcrec/secp256k1/v4"
+	"github.com/decred/dcrd/dcrec/secp256k1/v4/ecdsa"
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 	"github.com/hyperledger/fabric-private-chaincode/lib"
 	iso19086 "github.com/hyperledger/fabric-private-chaincode/lib/iso-19086"
@@ -148,7 +149,7 @@ func (s *SmartContract) Approve(ctx contractapi.TransactionContextInterface, sla
 		return err
 	}
 
-	signature, err := secp256k1.ParseDERSignature(signatureBytes)
+	signature, err := ecdsa.ParseDERSignature(signatureBytes)
 	if err != nil {
 		return err
 	}
@@ -331,4 +332,28 @@ func (s *SmartContract) RefundSLA(ctx contractapi.TransactionContextInterface, i
 	}
 
 	return ctx.GetStub().PutState(fmt.Sprintf("contract_%v", id), ContractJSON)
+}
+
+func (s *SmartContract) SLAViolated(ctx contractapi.TransactionContextInterface, id string) error {
+	contract, err := s.GetContract(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	if !contract.ConsumerApproved || !contract.ProviderApproved {
+		return fmt.Errorf("the contract %s has not been validated by the provider or the consumer", id)
+	}
+
+	contract.DailyViolations[0] += 1
+
+	ContractJSON, err := json.Marshal(contract)
+	if err != nil {
+		return err
+	}
+
+	if err != nil {
+		return fmt.Errorf("could not transfer tokens from violation: %v", err)
+	}
+
+	return ctx.GetStub().PutState(fmt.Sprintf("contract_%v", contract.ID), ContractJSON)
 }

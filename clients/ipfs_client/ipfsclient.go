@@ -61,13 +61,17 @@ func main() {
 
 			failed := make([]string, 0)
 			for _, m := range metrics {
-				err = ledger.CheckForViolation(Config, m)
+				violated, err := ledger.CheckForViolation(Config, m)
 				if err != nil {
-					log.Printf("failed while submitting violation %v: %v\n", m.ID, err)
+					log.Printf("failed checking for violation %v: %v\n", m.ID, err)
 					failed = append(failed, m.ID)
 					continue
 				}
-				log.Printf("Submitted violation %v", m.ID)
+
+				if violated {
+					ledger.SLAViolated(Config, m.SLAID)
+					log.Printf("Submitted violation for metric %v", m.ID)
+				}
 			}
 
 			// Don't delete the violations that have not been submitted

@@ -37,7 +37,26 @@ func Fabric() []api.Topology {
 	// in this example we use the FPC kv-test-go chaincode
 	// we just need to set the docker images
 	fabricTopology.EnableFPC()
-	fabricTopology.AddFPC(config.chaincodeName, config.chaincodeImage, config.fpcOptions...)
+	fabricTopology.AddFPC(config.privateChaincodeName, config.privateChaincodeImage, config.fpcOptions...)
+	fabricTopology.AddFPC(config.publicChaincodeName, config.publicChaincodeImage, config.publicFpcOptions...)
+
+	// cc := &topology.ChannelChaincode{
+	// 	Chaincode: topology.Chaincode{
+	// 		Name:            config.publicChaincodeName,
+	// 		Version:         "Version-0.0",
+	// 		Sequence:        "1",
+	// 		InitRequired:    false,
+	// 		Path:            config.publicChaincodePath,
+	// 		Lang:            "golang",
+	// 		Label:           config.publicChaincodeName,
+	// 		Ctor:            "",
+	// 		SignaturePolicy: `OR ('Org1MSP.member','Org2MSP.member')`,
+	// 	},
+	// 	Channel: fabricTopology.Channels[0].Name,
+	// 	Peers:   []string{"Org1_peer_0", "Org2_peer_0"},
+	// }
+
+	// fabricTopology.AddChaincode(cc)
 
 	// bring hyperledger explorer into the game
 	// you can reach it http://localhost:8080 with admin:admin
@@ -48,10 +67,13 @@ func Fabric() []api.Topology {
 }
 
 type config struct {
-	loggingSpec    string
-	chaincodeName  string
-	chaincodeImage string
-	fpcOptions     []func(chaincode *topology.ChannelChaincode)
+	loggingSpec           string
+	privateChaincodeName  string
+	privateChaincodeImage string
+	publicChaincodeName   string
+	publicChaincodeImage  string
+	fpcOptions            []func(chaincode *topology.ChannelChaincode)
+	publicFpcOptions      []func(chaincode *topology.ChannelChaincode)
 }
 
 // setup prepares a config helper struct, containing some additional configuration that can be injected via environment variables
@@ -65,15 +87,15 @@ func setup() *config {
 	}
 
 	// export CC_NAME=kv-test-go
-	config.chaincodeName = os.Getenv("CC_NAME")
-	if len(config.chaincodeName) == 0 {
-		config.chaincodeName = defaultChaincodeName
+	config.privateChaincodeName = os.Getenv("CC_NAME")
+	if len(config.privateChaincodeName) == 0 {
+		config.privateChaincodeName = defaultChaincodeName
 	}
 
 	// export FPC_CHAINCODE_IMAGE=fpc/fpc-kv-test-go:latest
-	config.chaincodeImage = os.Getenv("FPC_CHAINCODE_IMAGE")
-	if len(config.chaincodeImage) == 0 {
-		config.chaincodeImage = fmt.Sprintf("%s:%s", defaultChaincodeImageName, defaultChaincodeImageTag)
+	config.privateChaincodeImage = os.Getenv("FPC_CHAINCODE_IMAGE")
+	if len(config.privateChaincodeImage) == 0 {
+		config.privateChaincodeImage = fmt.Sprintf("%s:%s", defaultChaincodeImageName, defaultChaincodeImageTag)
 	}
 
 	// get mrenclave
@@ -89,6 +111,19 @@ func setup() *config {
 		sgxDevicePath := DetectSgxDevicePath()
 		config.fpcOptions = append(config.fpcOptions, topology.WithSGXDevicesPaths(sgxDevicePath))
 	}
+
+	config.publicChaincodeName = os.Getenv("PUBLIC_CC_NAME")
+	if len(config.publicChaincodeName) == 0 {
+		config.privateChaincodeName = defaultChaincodeName
+	}
+
+	config.publicChaincodeImage = os.Getenv("PUBLIC_FPC_CHAINCODE_IMAGE")
+
+	publcMrenclave := os.Getenv("PUBLIC_FPC_MRENCLAVE")
+	if len(publcMrenclave) == 0 {
+		publcMrenclave = defaultChaincodeMRENCLAVE
+	}
+	config.fpcOptions = append(config.publicFpcOptions, topology.WithMREnclave(publcMrenclave))
 
 	return config
 }

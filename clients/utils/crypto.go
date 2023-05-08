@@ -4,7 +4,9 @@ import (
 	"crypto/sha256"
 	"fmt"
 
-	"github.com/decred/dcrd/dcrec/secp256k1"
+	secp256k1 "github.com/decred/dcrd/dcrec/secp256k1/v4"
+	"github.com/decred/dcrd/dcrec/secp256k1/v4/ecdsa"
+
 	"github.com/tyler-smith/go-bip32"
 	"github.com/tyler-smith/go-bip39"
 )
@@ -77,12 +79,10 @@ func SignWithPrivateKey(data, mnemonic, passphrase string) ([]byte, error) {
 
 	fmt.Println(hashedData)
 
-	privKey, _ := secp256k1.PrivKeyFromBytes(masterKey.Key)
+	privKey := secp256k1.PrivKeyFromBytes(masterKey.Key)
 
 	// Sign the hash of the data
-	signature, err := privKey.Sign(hashedData)
-	if err != nil {
-		return []byte{}, err
-	}
+	signature := ecdsa.Sign(privKey, hashedData)
+
 	return signature.Serialize(), nil
 }
