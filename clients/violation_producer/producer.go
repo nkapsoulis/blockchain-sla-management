@@ -127,7 +127,11 @@ func createMetrics(nViolations, nAssets int) []iso19086parser.Metrics {
 		metric := iso19086parser.Metrics{
 			ID:    fmt.Sprintf("v%d", i),
 			SLAID: "a1",
-			SIRT:  fmt.Sprintf("%d", rand.Intn(2)),
+			Sample: iso19086parser.SampleData{
+				IncidentReportTime:     strconv.Itoa(rand.Int()),
+				IncidentResolutionTime: strconv.Itoa(rand.Int()),
+				IncidentResponseTime:   strconv.Itoa(rand.Int()),
+			},
 		}
 		metrics[i] = metric
 	}

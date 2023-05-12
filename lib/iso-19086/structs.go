@@ -8,7 +8,9 @@ type Parameter struct {
 	Name        string      `json:"name"`
 	ReferenceID string      `json:"referenceId"`
 	Unit        string      `json:"unit"`
+	Scale       string      `json:"scale,omitempty"`
 	Parameter   interface{} `json:"parameter"`
+	Parameters  []string    `json:"parameters,omitempty"`
 }
 
 type Rule struct {
@@ -62,8 +64,14 @@ type SLA struct {
 	State    string `json:"state"`
 }
 
+type SampleData struct {
+	IncidentResponseTime   string `json:"incident_response_time"`
+	IncidentReportTime     string `json:"incident_report_time"`
+	IncidentResolutionTime string `json:"incident_resolution_time"`
+}
+
 type Metrics struct {
-	ID    string `json:"id"`
-	SLAID string `json:"sla_id"`
-	SIRT  string `json:"sirl,omitempty"`
+	ID     string     `json:"id"`
+	SLAID  string     `json:"sla_id"`
+	Sample SampleData `json:"SAMPLE"`
 }

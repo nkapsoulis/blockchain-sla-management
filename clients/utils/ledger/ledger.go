@@ -122,12 +122,21 @@ func Approve(config *pkg.Config, id, username string, signature []byte) error {
 
 func CheckForViolation(config *pkg.Config, metric sla_types.Metric) (bool, error) {
 	client := pkg.NewClient(config, "private")
-
 	metricJSON, err := json.Marshal(metric)
 	if err != nil {
 		return false, err
 	}
-	violatedStr, err := client.Invoke("CheckIfSLAViolated", string(metricJSON))
+	sla, err := GetSLA(config, metric.SLAID)
+	if err != nil {
+		return false, err
+	}
+
+	slaJson, err := json.Marshal(sla)
+	if err != nil {
+		return false, err
+	}
+
+	violatedStr, err := client.Invoke("CheckIfSLAViolated", string(metricJSON), string(slaJson))
 	if err != nil {
 		return false, err
 	}
@@ -141,9 +150,9 @@ func CheckForViolation(config *pkg.Config, metric sla_types.Metric) (bool, error
 	return violated, nil
 }
 
-func SLAViolated(config *pkg.Config, id string) error {
+func SLAViolatedAndRefunded(config *pkg.Config, id string) error {
 	client := pkg.NewClient(config, "public")
-	_, err := client.Invoke("SLAViolated", id)
+	_, err := client.Invoke("SLAViolatedAndRefunded", id)
 	if err != nil {
 		return err
 	}

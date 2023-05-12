@@ -70,3 +70,4 @@ type User struct {
 	ProviderOf string `json:"providerOf"`
 	ClientOf   string `json:"clientOf"`
 }
+

@@ -41,8 +41,7 @@ func Parse(slaData, metricData []byte) (bool, error) {
 
 	log.Println(sla.ID)
 	metrics := ParseMetrics(metric)
-	params := ParseParameters(sla.SLO.Parameters)
-	violated, err := ParseExpression(sla.SLO.Expression.Expression, *params, *metrics)
+	violated, err := ParseSLO(sla.SLO, metrics)
 	if err != nil {
 		return false, err
 	}
@@ -50,62 +49,144 @@ func Parse(slaData, metricData []byte) (bool, error) {
 	return violated, nil
 }
 
-func ParseParameters(params []Parameter) *map[string]string {
-
-	mapping := make(map[string]string)
-	for _, p := range params {
-		mapping[p.ReferenceID] = p.Parameter.(string)
-	}
-	return &mapping
-}
-
 func ParseMetrics(metrics *Metrics) *map[string]string {
 	mapping := make(map[string]string)
 	fields := reflect.VisibleFields(reflect.TypeOf(*metrics))
 	value := reflect.ValueOf(metrics).Elem()
 	for _, field := range fields {
-		if field.Name == "ID" || field.Name == "SLAID" {
+		switch field.Name {
+		case "ID":
+		case "SLAID":
 			continue
+		case "Sample":
+			sampleFields := reflect.VisibleFields(reflect.TypeOf(*&metrics.Sample))
+			sampleValue := reflect.ValueOf(metrics.Sample).Elem()
+			for _, sf := range sampleFields {
+				ff := sampleValue.FieldByName(sf.Name)
+				mapping[sf.Name] = ff.Interface().(string)
+			}
+		default:
+			f := value.FieldByName(field.Name)
+			mapping[field.Name] = f.Interface().(string)
 		}
-		f := value.FieldByName(field.Name)
-		mapping[field.Name] = f.Interface().(string)
 	}
 	return &mapping
 }
 
-func ParseExpression(expr string, params, metric map[string]string) (bool, error) {
-	parts := strings.Split(strings.TrimSpace(expr), " ")
-	fmt.Println(parts)
+func ParseParameters(params []Parameter) map[string]string {
 
-	for i, p := range parts {
-		param, ok := params[p]
-		if ok {
-			parts[i] = param
-			continue
-		}
-
-		param, ok = metric[p]
-		if ok {
-			parts[i] = param
+	mapping := make(map[string]string)
+	for _, p := range params {
+		switch p.ReferenceID {
+		case "PBH_List":
+			mapping[p.ReferenceID] = strconv.Itoa(len(p.Parameters))
+		case "MIRespL":
+			mapping[p.ReferenceID] = p.Parameter.(string)
+		case "SIRL":
+			mapping[p.ReferenceID] = p.Parameter.(string)
 		}
 	}
+	return mapping
+}
 
-	p1, err := strconv.Atoi(parts[0])
+func ParseSLO(slo SLO, metrics *map[string]string) (bool, error) {
+	ums, err := ParseUnderlyingMetrics(slo.UnderlyingMetrics, metrics)
 	if err != nil {
 		return false, err
 	}
 
-	p2, err := strconv.Atoi(parts[2])
-	if err != nil {
-		return false, err
-	}
+	params := ParseParameters(slo.Parameters)
 
-	switch parts[1] {
-	case "<":
-		return !(p1 < p2), nil
-	case ">":
-		return !(p1 > p2), nil
-	default:
-		return false, fmt.Errorf("unknown operand %v", parts[1])
+	id := strings.Split(slo.ReferenceID, "_")
+	switch id[0] {
+	case "IRT":
+		SIRT, err := strconv.Atoi((*ums)["SIRT"])
+		if err != nil {
+			return false, err
+		}
+
+		SIRL, err := strconv.Atoi(params["SIRL"])
+		if err != nil {
+			return false, err
+		}
+
+		return SIRT < SIRL, nil
+	case "IRespT":
+		MiRespT, err := strconv.Atoi((*ums)["MiRespT"])
+		if err != nil {
+			return false, err
+		}
+
+		MiRespL, err := strconv.Atoi(params["MiRespL"])
+		if err != nil {
+			return false, err
+		}
+		return MiRespT < MiRespL, err
+	}
+	return false, fmt.Errorf("you should have never seen this error")
+}
+
+func ParseUnderlyingMetrics(ums []UnderlyingMetrics, metrics *map[string]string) (*map[string]string, error) {
+	mapping := make(map[string]string)
+	for _, um := range ums {
+
+		if fieldInStruct("underlyingMetrics", um) {
+			uum, err := ParseUnderlyingMetrics(um.UnderlyingMetrics, metrics)
+			if err != nil {
+				return nil, err
+			}
+			mergeMaps(&mapping, uum)
+		}
+
+		switch um.ReferenceID {
+		case "PBH":
+			params := ParseParameters(um.Parameters)
+			mapping["PBH"] = params["PBH_List"]
+		case "SIRT":
+			incidentResolutionTime, err := strconv.Atoi((*metrics)["incident_resolution_time"])
+			if err != nil {
+				return nil, err
+			}
+			incidentReportTime, err := strconv.Atoi((*metrics)["incident_report_time"])
+			if err != nil {
+				return nil, err
+			}
+
+			PBH, err := strconv.Atoi(mapping["PBH"])
+			if err != nil {
+				return nil, err
+			}
+
+			mapping["SIRT"] = strconv.Itoa(((incidentResolutionTime - incidentReportTime) / 86400) - PBH)
+		case "MiRespT":
+			incidentResponseTime, err := strconv.Atoi((*metrics)["incident_response_time"])
+			if err != nil {
+				return nil, err
+			}
+			incidentReportTime, err := strconv.Atoi((*metrics)["incident_report_time"])
+			if err != nil {
+				return nil, err
+			}
+
+			PBH, err := strconv.Atoi(mapping["PBH"])
+			if err != nil {
+				return nil, err
+			}
+			mapping["SIRT"] = strconv.Itoa(((incidentResponseTime - incidentReportTime) / 3600) - 24*PBH)
+		}
+	}
+	return nil, fmt.Errorf("you should have never seen this error")
+}
+
+func fieldInStruct(fieldName string, st interface{}) bool {
+	value := reflect.ValueOf(st)
+	field := value.FieldByName(fieldName)
+
+	return field.IsValid()
+}
+
+func mergeMaps(a, b *map[string]string) {
+	for k, v := range *b {
+		(*a)[k] = v
 	}
 }

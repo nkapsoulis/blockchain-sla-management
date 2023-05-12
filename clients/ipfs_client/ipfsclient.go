@@ -33,7 +33,7 @@ func main() {
 
 	for {
 		time.Sleep(5 * time.Second)
-		log.Println("Checking for new violations")
+		log.Println("Checking for new metrics")
 		dirs, err := sh.FilesLs(ctx, "/sla")
 		if err != nil {
 			log.Printf("failed while checking sla folders: %v\n", err)
@@ -69,7 +69,7 @@ func main() {
 				}
 
 				if violated {
-					ledger.SLAViolated(Config, m.SLAID)
+					ledger.SLAViolatedAndRefunded(Config, m.SLAID)
 					log.Printf("Submitted violation for metric %v", m.ID)
 				}
 			}

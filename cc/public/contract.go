@@ -357,3 +357,30 @@ func (s *SmartContract) SLAViolated(ctx contractapi.TransactionContextInterface,
 
 	return ctx.GetStub().PutState(fmt.Sprintf("contract_%v", contract.ID), ContractJSON)
 }
+
+func (s *SmartContract) SLAViolatedAndRefunded(ctx contractapi.TransactionContextInterface, id string) error {
+	contract, err := s.GetContract(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	if contract.SLA.State == "stopped" {
+		return fmt.Errorf("the contract %s is completed, no violations can happen", id)
+	}
+
+	if !contract.ConsumerApproved || !contract.ProviderApproved {
+		return fmt.Errorf("the contract %s has not been validated by the provider or the consumer", contract.ID)
+	}
+
+	err = s.transferTokens(ctx, contract.SLA.Provider.Name, contract.SLA.Client.Name, float64(contract.RefundValue))
+	if err != nil {
+		return err
+	}
+
+	ContractJSON, err := json.Marshal(contract)
+	if err != nil {
+		return err
+	}
+
+	return ctx.GetStub().PutState(fmt.Sprintf("contract_%v", id), ContractJSON)
+}
