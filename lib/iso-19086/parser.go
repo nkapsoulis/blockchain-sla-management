@@ -3,7 +3,6 @@ package iso19086
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"reflect"
 	"strconv"
 	"strings"
@@ -39,7 +38,6 @@ func Parse(slaData, metricData []byte) (bool, error) {
 		return false, err
 	}
 
-	log.Println(sla.ID)
 	metrics := ParseMetrics(metric)
 	violated, err := ParseSLO(sla.SLO, metrics)
 	if err != nil {
@@ -59,8 +57,8 @@ func ParseMetrics(metrics *Metrics) *map[string]string {
 		case "SLAID":
 			continue
 		case "Sample":
-			sampleFields := reflect.VisibleFields(reflect.TypeOf(*&metrics.Sample))
-			sampleValue := reflect.ValueOf(metrics.Sample).Elem()
+			sampleFields := reflect.VisibleFields(reflect.TypeOf(metrics.Sample))
+			sampleValue := reflect.ValueOf(&metrics.Sample).Elem()
 			for _, sf := range sampleFields {
 				ff := sampleValue.FieldByName(sf.Name)
 				mapping[sf.Name] = ff.Interface().(string)
@@ -110,7 +108,7 @@ func ParseSLO(slo SLO, metrics *map[string]string) (bool, error) {
 			return false, err
 		}
 
-		return SIRT < SIRL, nil
+		return !(SIRT < SIRL), nil
 	case "IRespT":
 		MiRespT, err := strconv.Atoi((*ums)["MiRespT"])
 		if err != nil {
@@ -121,7 +119,7 @@ func ParseSLO(slo SLO, metrics *map[string]string) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		return MiRespT < MiRespL, err
+		return !(MiRespT < MiRespL), err
 	}
 	return false, fmt.Errorf("you should have never seen this error")
 }
@@ -130,24 +128,27 @@ func ParseUnderlyingMetrics(ums []UnderlyingMetrics, metrics *map[string]string)
 	mapping := make(map[string]string)
 	for _, um := range ums {
 
-		if fieldInStruct("underlyingMetrics", um) {
+		if underlyingMetricsExists(um) {
+
 			uum, err := ParseUnderlyingMetrics(um.UnderlyingMetrics, metrics)
 			if err != nil {
 				return nil, err
 			}
 			mergeMaps(&mapping, uum)
 		}
-
+		fmt.Println(um.ReferenceID)
 		switch um.ReferenceID {
 		case "PBH":
 			params := ParseParameters(um.Parameters)
 			mapping["PBH"] = params["PBH_List"]
+
 		case "SIRT":
-			incidentResolutionTime, err := strconv.Atoi((*metrics)["incident_resolution_time"])
+			fmt.Println(metrics)
+			incidentResolutionTime, err := strconv.Atoi((*metrics)["IncidentResolutionTime"])
 			if err != nil {
 				return nil, err
 			}
-			incidentReportTime, err := strconv.Atoi((*metrics)["incident_report_time"])
+			incidentReportTime, err := strconv.Atoi((*metrics)["IncidentReportTime"])
 			if err != nil {
 				return nil, err
 			}
@@ -175,14 +176,11 @@ func ParseUnderlyingMetrics(ums []UnderlyingMetrics, metrics *map[string]string)
 			mapping["SIRT"] = strconv.Itoa(((incidentResponseTime - incidentReportTime) / 3600) - 24*PBH)
 		}
 	}
-	return nil, fmt.Errorf("you should have never seen this error")
+	return &mapping, nil
 }
 
-func fieldInStruct(fieldName string, st interface{}) bool {
-	value := reflect.ValueOf(st)
-	field := value.FieldByName(fieldName)
-
-	return field.IsValid()
+func underlyingMetricsExists(st UnderlyingMetrics) bool {
+	return st.UnderlyingMetrics != nil
 }
 
 func mergeMaps(a, b *map[string]string) {

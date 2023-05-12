@@ -49,6 +49,7 @@ func main() {
 	}
 
 	for _, metric := range metrics {
+		CreateFile(metric)
 		err = ipfs.CreateSLAFolder(ctx, sh, metric.SLAID)
 		if err != nil {
 			panic(err)
@@ -128,9 +129,9 @@ func createMetrics(nViolations, nAssets int) []iso19086parser.Metrics {
 			ID:    fmt.Sprintf("v%d", i),
 			SLAID: "a1",
 			Sample: iso19086parser.SampleData{
-				IncidentReportTime:     strconv.Itoa(rand.Int()),
-				IncidentResolutionTime: strconv.Itoa(rand.Int()),
-				IncidentResponseTime:   strconv.Itoa(rand.Int()),
+				IncidentReportTime:     strconv.Itoa(rand.Intn(100)),
+				IncidentResolutionTime: strconv.Itoa(rand.Intn(100)),
+				IncidentResponseTime:   strconv.Itoa(rand.Intn(100)),
 			},
 		}
 		metrics[i] = metric
