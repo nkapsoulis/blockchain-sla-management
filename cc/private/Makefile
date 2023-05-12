@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-TOP = ../..	
+TOP = ../..
 include $(TOP)/ecc_go/build.mk
 
 CC_NAME ?= fpc-violation-chaincode
