@@ -13,7 +13,7 @@ const metricFolder = "./metrics/"
 const slaFolder = "./slas/"
 
 func main() {
-	slaData, err := ioutil.ReadFile(slaFolder + "Incident Resolution Time SLO.json")
+	slaData, err := ioutil.ReadFile(slaFolder + "Incident Response Time SLO.json")
 	if err != nil {
 		panic(err)
 	}

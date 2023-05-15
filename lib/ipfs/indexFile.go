@@ -15,7 +15,11 @@ func createIndexFile(ctx context.Context, sh *shell.Shell, path string) error {
 
 func writeToIndexFile(ctx context.Context, sh *shell.Shell, path, data string) error {
 	indexPath := path + "/index"
-	return sh.FilesWrite(ctx, indexPath, strings.NewReader(data+" "))
+	prevData, err := readIndexFile(ctx, sh, path)
+	if err != nil {
+		return err
+	}
+	return sh.FilesWrite(ctx, indexPath, strings.NewReader(string(prevData)+data+" "))
 }
 
 func overwriteIndexFile(ctx context.Context, sh *shell.Shell, path, data string) error {
@@ -31,14 +35,22 @@ func overwriteIndexFile(ctx context.Context, sh *shell.Shell, path, data string)
 	return writeToIndexFile(ctx, sh, path, data)
 }
 
-func parseIndexFile(ctx context.Context, sh *shell.Shell, path string) ([]string, error) {
+func readIndexFile(ctx context.Context, sh *shell.Shell, path string) ([]byte, error) {
 	indexPath := path + "/index"
 	content, err := sh.FilesRead(ctx, indexPath)
 	if err != nil {
-		return []string{}, err
+		return []byte{}, err
 	}
 
 	data, err := io.ReadAll(content)
+	if err != nil {
+		return []byte{}, err
+	}
+	return data, nil
+}
+
+func parseIndexFile(ctx context.Context, sh *shell.Shell, path string) ([]string, error) {
+	data, err := readIndexFile(ctx, sh, path)
 	if err != nil {
 		return []string{}, err
 	}

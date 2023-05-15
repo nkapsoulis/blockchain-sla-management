@@ -110,12 +110,12 @@ func ParseSLO(slo SLO, metrics *map[string]string) (bool, error) {
 
 		return !(SIRT < SIRL), nil
 	case "IRespT":
-		MiRespT, err := strconv.Atoi((*ums)["MiRespT"])
+		MiRespT, err := strconv.Atoi((*ums)["MIRespT"])
 		if err != nil {
 			return false, err
 		}
 
-		MiRespL, err := strconv.Atoi(params["MiRespL"])
+		MiRespL, err := strconv.Atoi(params["MIRespL"])
 		if err != nil {
 			return false, err
 		}
@@ -136,7 +136,7 @@ func ParseUnderlyingMetrics(ums []UnderlyingMetrics, metrics *map[string]string)
 			}
 			mergeMaps(&mapping, uum)
 		}
-		fmt.Println(um.ReferenceID)
+
 		switch um.ReferenceID {
 		case "PBH":
 			params := ParseParameters(um.Parameters)
@@ -159,21 +159,23 @@ func ParseUnderlyingMetrics(ums []UnderlyingMetrics, metrics *map[string]string)
 			}
 
 			mapping["SIRT"] = strconv.Itoa(((incidentResolutionTime - incidentReportTime) / 86400) - PBH)
-		case "MiRespT":
-			incidentResponseTime, err := strconv.Atoi((*metrics)["incident_response_time"])
+		case "MIRespT":
+			incidentResponseTime, err := strconv.Atoi((*metrics)["IncidentResponseTime"])
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("failed to read incident response time: %v", err)
 			}
-			incidentReportTime, err := strconv.Atoi((*metrics)["incident_report_time"])
+			incidentReportTime, err := strconv.Atoi((*metrics)["IncidentReportTime"])
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("failed to read incident report time: %v", err)
 			}
 
 			PBH, err := strconv.Atoi(mapping["PBH"])
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("failed to read PBH: %v", err)
 			}
-			mapping["SIRT"] = strconv.Itoa(((incidentResponseTime - incidentReportTime) / 3600) - 24*PBH)
+			fmt.Println("TEST")
+
+			mapping["MIRespT"] = strconv.Itoa(((incidentResponseTime - incidentReportTime) / 3600) - 24*PBH)
 		}
 	}
 	return &mapping, nil

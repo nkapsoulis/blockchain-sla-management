@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"strings"
 
 	iso19086 "github.com/hyperledger/fabric-private-chaincode/lib/iso-19086"
@@ -71,6 +72,7 @@ func ReadFile(ctx context.Context, sh *shell.Shell, path string) (string, error)
 func GetUnreadMetrics(ctx context.Context, sh *shell.Shell, id string) ([]byte, error) {
 	path := "/sla/" + id
 	metricIDs, err := parseIndexFile(ctx, sh, path)
+	log.Println("IDS:", metricIDs)
 	if err != nil {
 		return nil, fmt.Errorf("cannot read index file: %v", err)
 	}
