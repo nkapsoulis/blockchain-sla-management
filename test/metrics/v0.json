@@ -1,9 +1,0 @@
-{
-  "id": "v0",
-  "sla_id": "a1",
-  "SAMPLE": {
-    "incident_report_time": "23",
-    "incident_response_time": "20",
-    "incident_resolution_time": "20"
-  }
-}

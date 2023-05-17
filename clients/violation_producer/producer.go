@@ -127,7 +127,7 @@ func createMetrics(nViolations, nAssets int) []iso19086parser.Metrics {
 		metrics := make([]iso19086parser.Metrics, nViolations+2)
 		metrics[0] = iso19086parser.Metrics{
 			ID:    fmt.Sprintf("sla%d_metric%d", id, 321312),
-			SLAID: fmt.Sprintf("a%d", id),
+			SLAID: fmt.Sprintf("sla%d", id),
 			Sample: iso19086parser.SampleData{
 				IncidentReportTime:     "0",
 				IncidentResolutionTime: "691200",
@@ -148,7 +148,7 @@ func createMetrics(nViolations, nAssets int) []iso19086parser.Metrics {
 		for i := 2; i < nViolations+2; i++ {
 			metric := iso19086parser.Metrics{
 				ID:    fmt.Sprintf("sla%d_metric%d", id, i+rand.Intn(100)),
-				SLAID: fmt.Sprintf("a%d", id),
+				SLAID: fmt.Sprintf("sla%d", id),
 				Sample: iso19086parser.SampleData{
 					IncidentReportTime:     strconv.Itoa(rand.Intn(100000)),
 					IncidentResolutionTime: strconv.Itoa(rand.Intn(100000)),
