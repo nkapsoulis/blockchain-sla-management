@@ -122,42 +122,45 @@ func createMetrics(nViolations, nAssets int) []iso19086parser.Metrics {
 	if nAssets == 0 {
 		nAssets = 5
 	}
-
-	metrics := make([]iso19086parser.Metrics, nViolations+2)
-	metrics[0] = iso19086parser.Metrics{
-		ID:    fmt.Sprintf("v%d", 321312),
-		SLAID: "a2",
-		Sample: iso19086parser.SampleData{
-			IncidentReportTime:     "0",
-			IncidentResolutionTime: "691200",
-			IncidentResponseTime:   strconv.Itoa(rand.Intn(100)),
-		},
-	}
-
-	metrics[1] = iso19086parser.Metrics{
-		ID:    fmt.Sprintf("v%d", 112321),
-		SLAID: "a2",
-		Sample: iso19086parser.SampleData{
-			IncidentReportTime:     "0",
-			IncidentResolutionTime: "691200",
-			IncidentResponseTime:   "1000000",
-		},
-	}
-
-	for i := 2; i < nViolations+2; i++ {
-		metric := iso19086parser.Metrics{
-			ID:    fmt.Sprintf("v%d", i+rand.Intn(100)),
-			SLAID: "a2",
+	allMetrics := make([]iso19086parser.Metrics, 0)
+	for _, id := range []int{1, 2} {
+		metrics := make([]iso19086parser.Metrics, nViolations+2)
+		metrics[0] = iso19086parser.Metrics{
+			ID:    fmt.Sprintf("sla%d_metric%d", id, 321312),
+			SLAID: fmt.Sprintf("a%d", id),
 			Sample: iso19086parser.SampleData{
-				IncidentReportTime:     strconv.Itoa(rand.Intn(100000)),
-				IncidentResolutionTime: strconv.Itoa(rand.Intn(100000)),
-				IncidentResponseTime:   strconv.Itoa(rand.Intn(100000)),
+				IncidentReportTime:     "0",
+				IncidentResolutionTime: "691200",
+				IncidentResponseTime:   strconv.Itoa(rand.Intn(100)),
 			},
 		}
-		metrics[i] = metric
+
+		metrics[1] = iso19086parser.Metrics{
+			ID:    fmt.Sprintf("sla%d_metric%d", id, 112321),
+			SLAID: fmt.Sprintf("sla%d", id),
+			Sample: iso19086parser.SampleData{
+				IncidentReportTime:     "0",
+				IncidentResolutionTime: "691200",
+				IncidentResponseTime:   "1000000",
+			},
+		}
+
+		for i := 2; i < nViolations+2; i++ {
+			metric := iso19086parser.Metrics{
+				ID:    fmt.Sprintf("sla%d_metric%d", id, i+rand.Intn(100)),
+				SLAID: fmt.Sprintf("a%d", id),
+				Sample: iso19086parser.SampleData{
+					IncidentReportTime:     strconv.Itoa(rand.Intn(100000)),
+					IncidentResolutionTime: strconv.Itoa(rand.Intn(100000)),
+					IncidentResponseTime:   strconv.Itoa(rand.Intn(100000)),
+				},
+			}
+			metrics[i] = metric
+		}
+		allMetrics = append(allMetrics, metrics...)
 	}
 
-	return metrics
+	return allMetrics
 }
 
 func createUsers(startID, nUsers int) ([]iso19086parser.Entity, int) {

@@ -35,7 +35,7 @@ type Approval struct {
 type cc_SLA struct {
 	SLA
 	Approval
-	RefundValue     int     `json:"RefundValue"` // compensation amount
+	RefundValue     float64 `json:"RefundValue"` // compensation amount
 	TotalViolations []int   `json:"TotalViolations"`
 	DailyValue      float64 `json:"DailyValue"`
 	DailyViolations []int   `json:"DailyViolations"`
@@ -206,7 +206,7 @@ func (s *SmartContract) CreateOrUpdateContract(ctx contractapi.TransactionContex
 		return err
 	}
 
-	value := rand.Intn(20) + 10
+	value := rand.Float64()
 	totalViolations := make([]int, 1)
 	dailyViolations := make([]int, 1)
 	dailyValue := 0.0

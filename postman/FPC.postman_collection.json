@@ -1,0 +1,201 @@
+{
+	"info": {
+		"_postman_id": "9c04cd97-0f0f-45e1-bb1e-ed0e0bc3e07e",
+		"name": "FPC",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "15833183"
+	},
+	"item": [
+		{
+			"name": "Get Name",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8000",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000"
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "User",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8000/auth/user",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"auth",
+						"user"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Asset",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8000/assets/a1",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"assets",
+						"a1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Asset Approvals",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8000/assets/a1/approvals",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"assets",
+						"a1",
+						"approvals"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Login",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"name\": \"George\",\r\n    \"mnemonic\": \"brick wave trial cute observe pyramid pelican position patient poverty stage hidden chronic leisure grace desert suspect update culture margin hockey brass certain silent\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/login",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"login"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Add Asset",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"id\": \"a1\",\r\n  \"provider\": {\r\n    \"name\": \"Marek\",\r\n    \"id\": \"10\"\r\n  },\r\n  \"client\": {\r\n    \"name\": \"George\",\r\n    \"id\": \"2\"\r\n  },\r\n  \"state\": \"active\",\r\n  \"slo\": {\r\n    \"name\": \"Incident Resolution Time SLO\",\r\n    \"referenceId\": \"IRT_001\",\r\n    \"scale\": \"NOMINAL\",\r\n    \"expression\": {\r\n      \"expression\": \"SIRT < SIRL\"\r\n    },\r\n    \"parameters\": [\r\n      {\r\n        \"name\": \"SevereIncidentResolutionLimit\",\r\n        \"referenceId\": \"SIRL\",\r\n        \"unit\": \"business days\",\r\n        \"scale\": \"NOMINAL\",\r\n        \"parameter\": \"2\"\r\n      }\r\n    ],\r\n    \"underlyingMetrics\": [\r\n      {\r\n        \"name\": \"SevereIncidentResolutionTime\",\r\n        \"referenceId\": \"SIRT\",\r\n        \"unit\": \"business days\",\r\n        \"scale\": \"INTERVAL\",\r\n        \"expression\": {\r\n          \"expression\": \"SIRT = ((SAMPLE_001.incident_resolution_time - SAMPLE_001.incident_report_time)/86400) - PBH\"\r\n        },\r\n        \"underlyingMetrics\": [\r\n          {\r\n            \"name\": \"ProviderBankHolidays\",\r\n            \"referenceId\": \"PBH\",\r\n            \"unit\": \"days\",\r\n            \"scale\": \"NOMINAL\",\r\n            \"expression\": {\r\n              \"expression\": \"PBH = PBH + 1 for each day belonging to PBH_List\"\r\n            },\r\n            \"parameters\": [\r\n              {\r\n                \"name\": \"ProviderBankHolidays_List\",\r\n                \"referenceId\": \"PBH_List\",\r\n                \"scale\": \"NOMINAL\",\r\n                \"parameters\": [\r\n                  \"2016-03-25\",\r\n                  \"2016-10-28\",\r\n                  \"2016-03-20\",\r\n                  \"2016-03-13\"\r\n                ]\r\n              }\r\n            ],\r\n            \"samples\": [\r\n              {\r\n                \"name\": \"An incident reported by the customer\",\r\n                \"referenceId\": \"SAMPLE_001\",\r\n                \"scale\": \"NOMINAL\",\r\n                \"unit\": \"date/time\",\r\n                \"incident_report_time\": \"the date/time the incident was first reported by the customer\",\r\n                \"incident_response_time\": \"the date/time the provider first responded to the incident\",\r\n                \"incident_resolution_time\": \"the date/time the provider resolved the incident\",\r\n                \"note\": \"example of a sample to measure the resolution time for an incident \"\r\n              }\r\n            ]\r\n          }\r\n        ]\r\n      }\r\n    ]\r\n  }\r\n}\r\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/assets",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"assets"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Approve Asset",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"mnemonic\": \"brick wave trial cute observe pyramid pelican position patient poverty stage hidden chronic leisure grace desert suspect update culture margin hockey brass certain silent\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/assets/a1/approve",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"assets",
+						"a1",
+						"approve"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Logout",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/logout",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"logout"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

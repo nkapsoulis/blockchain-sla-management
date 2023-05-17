@@ -60,7 +60,7 @@ func GetUser(config *pkg.Config, name string) sla_types.User {
 
 func CreateUser(config *pkg.Config, name, publicKey string) {
 	client := pkg.NewClient(config, "public")
-	_, err := client.Invoke("CreateUser", name, publicKey, "500")
+	_, err := client.Invoke("CreateUser", name, publicKey, "5")
 	if err != nil {
 		log.Fatalln(err)
 	}
