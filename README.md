@@ -4,10 +4,19 @@ This repository creates a network where SLAs are handled between a provider and 
 
 This provides security, since it guarantees that even the computation is secured and untempered.
 
+## Using the repository
+
+Make sure to recursively clone this repository by running
+
+```bash
+git clone --recursive https://github.com/nkapsoulis/blockchain-sla-management.git
+```
 ## Set-Up
 
+0. Make sure you have a new version of Docker installed, as well as make.
 1. Go to `utils/docker` and build the development container with `make build-dev`
 2. Run the development container with `make run-dev`
+3. Compile the protocol buffers definitions by running `make -C protos`
 3. Compile the chaincodes and clients by running `make` on the following folders
     * `cc/public`
     * `cc/private`
