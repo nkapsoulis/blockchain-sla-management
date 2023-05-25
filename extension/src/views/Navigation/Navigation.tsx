@@ -57,7 +57,7 @@ function Navigation() {
               {' '}
               {serverName}
             </h2>
-            <Button fullWidth onClick={() => navigate('/assets')}>My Assets</Button>
+            <Button fullWidth onClick={() => navigate('/account')}>My Account</Button>
             <Button fullWidth onClick={() => navigate('/get-asset')}>Get Asset</Button>
             <Button fullWidth onClick={() => navigate('/transfer')}>Transfer Asset</Button>
             <Button fullWidth onClick={() => navigate('/create-asset')}>Create Asset</Button>

@@ -15,6 +15,7 @@ export const getAuthURL = () => `${getBaseURL()}/auth`;
 export const getTransferAssetURL = () => `${getAssetsURL()}/transfer`;
 export const getLoginURL = () => `${getAuthURL()}/login`;
 export const getLogoutURL = () => `${getAuthURL()}/logout`;
+export const getUserURL = () => `${getAuthURL()}/user`;
 
 export function setBaseUrl(urlString: string): string {
   try {

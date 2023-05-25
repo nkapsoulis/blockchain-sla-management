@@ -4,17 +4,23 @@ import { JsonViewer } from '@textea/json-viewer';
 
 import Button from '../../components/Button/Button';
 import { SLA } from '../../models/Asset.model';
+import User from '../../models/User.model';
 
 export default function MyAssets() {
   const [error, setError] = React.useState('');
   const [assets, setAssets] = React.useState<SLA[]>([]);
+  const [userData, setUserData] = React.useState<User>({} as User);
 
   const data = useLoaderData() as any;
   React.useEffect(() => {
-    if (data.success !== undefined) {
+    console.log(data);
+    if (data[0].success !== undefined) {
       setError(data.message);
+    } else if (data[1].success !== undefined) {
+      setError(`${error} ${data[1].message}`);
     } else {
-      setAssets(data.assets ? data.assets : []);
+      setAssets(data[0].assets ? data[0].assets : []);
+      setUserData(data[1].user);
       setError('');
     }
   }, [data]);
@@ -22,11 +28,21 @@ export default function MyAssets() {
   const navigate = useNavigate();
   return (
     <>
-      <h1>Assets</h1>
       {
         error !== ''
         && <p>{`Error: ${error}`}</p>
       }
+      {userData && (
+        <>
+          <h1>{userData.name}</h1>
+          <h2>
+            Balance:
+            {' '}
+            {userData.balance}
+          </h2>
+        </>
+      )}
+      <h3>Assets</h3>
       {assets.length
         ? (
           <table>
