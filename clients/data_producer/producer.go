@@ -48,6 +48,11 @@ func main() {
 		panic(err)
 	}
 
+	err = os.MkdirAll("./metrics", os.ModePerm)
+	if err != nil {
+		panic(err)
+	}
+
 	for _, metric := range metrics {
 		CreateFile(metric)
 		err = ipfs.CreateSLAFolder(ctx, sh, metric.SLAID)
