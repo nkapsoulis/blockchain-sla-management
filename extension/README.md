@@ -1,4 +1,4 @@
-# Pledger Extension
+# Hyperledger Fabric Extension
 
 Chrome extension written in React.
 
@@ -23,7 +23,9 @@ Builds the app for production to the `build` folder.\
 It correctly bundles React in production mode and optimizes the build for the best performance.
 
 The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+The extension is ready to be deployed!
+
+## Using the Extension
 
 In order to test the app as an extension you can load it into a Chromium-based browser (like Chrome or Edge).
 To do that you need to enable developer mode for extensions and then load the unpacked extension:
