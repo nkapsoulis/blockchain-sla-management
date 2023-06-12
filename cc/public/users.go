@@ -201,3 +201,37 @@ func (s *SmartContract) UserExists(ctx contractapi.TransactionContextInterface, 
 
 	return UserJSON != nil, nil
 }
+
+func (s *SmartContract) transferTokens(ctx contractapi.TransactionContextInterface,
+	from, to string, amount float64) error {
+	if from == to {
+		return fmt.Errorf("cannot transfer from and to the same account")
+	}
+
+	fromBalance, err := s.UserBalance(ctx, from)
+	if err != nil {
+		return fmt.Errorf("could not get balance of transferer during token transfer: %v", err)
+	}
+	if fromBalance < amount {
+		return fmt.Errorf("transferer does not have enough tokens to complete transfer")
+	}
+
+	toBalance, err := s.UserBalance(ctx, to)
+	if err != nil {
+		return fmt.Errorf("could not get balance of transferee during token transfer: %v", err)
+	}
+
+	updatedFromBalance := fromBalance - amount
+	updatedToBalance := toBalance + amount
+
+	err = s.updateUserBalance(ctx, from, updatedFromBalance)
+	if err != nil {
+		return fmt.Errorf("could not update sender's balance: %v", err)
+	}
+
+	err = s.updateUserBalance(ctx, to, updatedToBalance)
+	if err != nil {
+		return fmt.Errorf("could not update receiver's balance: %v", err)
+	}
+	return nil
+}

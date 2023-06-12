@@ -8,7 +8,6 @@
     "name": "George",
     "id": "2"
   },
-  "state": "active",
   "slo": {
     "name": "Incident Response Time SLO",
     "referenceId": "IRespT_001",

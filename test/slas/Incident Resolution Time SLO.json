@@ -8,7 +8,6 @@
     "name": "George",
     "id": "2"
   },
-  "state": "active",
   "slo": {
     "name": "Incident Resolution Time SLO",
     "referenceId": "IRT_001",

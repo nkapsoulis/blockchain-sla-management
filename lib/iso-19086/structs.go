@@ -60,8 +60,7 @@ type SLA struct {
 	ID       string `json:"id"`
 	SLO      SLO    `json:"slo"`
 	Provider Entity `json:"provider"`
-	Client   Entity `json:"client"`
-	State    string `json:"state"`
+	Client   Entity `json:"client,omitempty"`
 }
 
 type SampleData struct {
