@@ -35,6 +35,7 @@ type Approval struct {
 type cc_SLA struct {
 	SLA
 	Approval
+	State           string  `json:"state"`
 	RefundValue     float64 `json:"RefundValue"` // compensation amount
 	TotalViolations []int   `json:"TotalViolations"`
 	DailyValue      float64 `json:"DailyValue"`
@@ -55,126 +56,6 @@ func (s *SmartContract) InitLedger(ctx contractapi.TransactionContextInterface) 
 
 	return ctx.GetStub().PutState("initRan", []byte("true"))
 
-}
-
-func (s *SmartContract) transferTokens(ctx contractapi.TransactionContextInterface,
-	from, to string, amount float64) error {
-	if from == to {
-		return fmt.Errorf("cannot transfer from and to the same account")
-	}
-
-	fromBalance, err := s.UserBalance(ctx, from)
-	if err != nil {
-		return fmt.Errorf("could not get balance of transferer during token transfer: %v", err)
-	}
-	if fromBalance < amount {
-		return fmt.Errorf("transferer does not have enough tokens to complete transfer")
-	}
-
-	toBalance, err := s.UserBalance(ctx, to)
-	if err != nil {
-		return fmt.Errorf("could not get balance of transferee during token transfer: %v", err)
-	}
-
-	updatedFromBalance := fromBalance - amount
-	updatedToBalance := toBalance + amount
-
-	err = s.updateUserBalance(ctx, from, updatedFromBalance)
-	if err != nil {
-		return fmt.Errorf("could not update sender's balance: %v", err)
-	}
-
-	err = s.updateUserBalance(ctx, to, updatedToBalance)
-	if err != nil {
-		return fmt.Errorf("could not update receiver's balance: %v", err)
-	}
-	return nil
-}
-
-func (s *SmartContract) GetApprovals(ctx contractapi.TransactionContextInterface, slaId string) (string, error) {
-	contract, err := s.GetContract(ctx, slaId)
-	if err != nil {
-		return "", err
-	}
-
-	approvalJSON, err := json.Marshal(contract.Approval)
-	if err != nil {
-		return "", err
-	}
-	return string(approvalJSON), err
-}
-
-// Approve gets the signature of the user and verifies they have signed the contract
-func (s *SmartContract) Approve(ctx contractapi.TransactionContextInterface, slaId, userName, signatureHex string) error {
-	contract, err := s.GetContract(ctx, slaId)
-	if err != nil {
-		return err
-	}
-
-	user, err := s.ReadUser(ctx, userName)
-	if err != nil {
-		return err
-	}
-
-	// If the user is not a client nor a provider then return
-	if contract.SLA.Provider.Name != userName &&
-		contract.SLA.Client.Name != userName {
-		return fmt.Errorf("the contract does not include the provided user")
-	}
-
-	// Now we know that the user is either a client or a provider
-	// so we check one of them.
-	client := false
-	if contract.SLA.Client.Name == userName {
-		client = true
-	}
-
-	slaJSON, err := json.Marshal(contract.SLA)
-	if err != nil {
-		return err
-	}
-
-	signatureBytes, err := hex.DecodeString(signatureHex)
-	if err != nil {
-		return err
-	}
-
-	pubKey, err := bip32.B58Deserialize(user.PubKey)
-	if err != nil {
-		return err
-	}
-
-	pubKeyParsed, err := secp256k1.ParsePubKey(pubKey.PublicKey().Key)
-	if err != nil {
-		return err
-	}
-
-	signature, err := ecdsa.ParseDERSignature(signatureBytes)
-	if err != nil {
-		return err
-	}
-
-	// Create the hash of the data
-	hash := sha256.New()
-	hash.Write([]byte(slaJSON))
-	hashedData := hash.Sum(nil)
-
-	if signature.Verify(hashedData, pubKeyParsed) {
-		if client {
-			contract.Approval.ConsumerApproved = true
-		} else {
-			contract.Approval.ProviderApproved = true
-		}
-	} else {
-		return fmt.Errorf("signature could not be verified")
-	}
-
-	slaContractJSON, err := json.Marshal(contract)
-	if err != nil {
-		return err
-	}
-
-	return ctx.GetStub().PutState(fmt.Sprintf("contract_%v", contract.SLA.ID), slaContractJSON)
 }
 
 // CreateOrUpdateContract issues a new Contract to the world state with given details.
@@ -232,9 +113,112 @@ func (s *SmartContract) CreateOrUpdateContract(ctx contractapi.TransactionContex
 		SLA:             sla,
 		Approval:        *approval,
 		RefundValue:     value,
+		State:           "unapproved",
 		TotalViolations: totalViolations,
 		DailyViolations: dailyViolations,
 		DailyValue:      dailyValue,
+	}
+
+	slaContractJSON, err := json.Marshal(contract)
+	if err != nil {
+		return err
+	}
+
+	return ctx.GetStub().PutState(fmt.Sprintf("contract_%v", contract.SLA.ID), slaContractJSON)
+}
+
+func (s *SmartContract) GetApprovals(ctx contractapi.TransactionContextInterface, slaId string) (string, error) {
+	contract, err := s.GetContract(ctx, slaId)
+	if err != nil {
+		return "", err
+	}
+
+	approvalJSON, err := json.Marshal(contract.Approval)
+	if err != nil {
+		return "", err
+	}
+	return string(approvalJSON), nil
+}
+
+func (s *SmartContract) GetState(ctx contractapi.TransactionContextInterface, slaId string) (string, error) {
+	contract, err := s.GetContract(ctx, slaId)
+	if err != nil {
+		return "", err
+	}
+	return (*contract).State, nil
+}
+
+// Approve gets the signature of the user and verifies they have signed the contract
+func (s *SmartContract) Approve(ctx contractapi.TransactionContextInterface, slaId, userName, signatureHex string) error {
+	contract, err := s.GetContract(ctx, slaId)
+	if err != nil {
+		return err
+	}
+
+	user, err := s.ReadUser(ctx, userName)
+	if err != nil {
+		return err
+	}
+
+	// If the user is not a client nor a provider then return
+	if contract.SLA.Provider.Name != userName &&
+		contract.SLA.Client.Name != userName {
+		return fmt.Errorf("the contract does not include the provided user")
+	}
+
+	if contract.State == "active" {
+		return fmt.Errorf("the contract is already in active state")
+	}
+
+	// Now we know that the user is either a client or a provider
+	// so we check one of them.
+	client := false
+	if contract.SLA.Client.Name == userName {
+		client = true
+	}
+
+	slaJSON, err := json.Marshal(contract.SLA)
+	if err != nil {
+		return err
+	}
+
+	signatureBytes, err := hex.DecodeString(signatureHex)
+	if err != nil {
+		return err
+	}
+
+	pubKey, err := bip32.B58Deserialize(user.PubKey)
+	if err != nil {
+		return err
+	}
+
+	pubKeyParsed, err := secp256k1.ParsePubKey(pubKey.PublicKey().Key)
+	if err != nil {
+		return err
+	}
+
+	signature, err := ecdsa.ParseDERSignature(signatureBytes)
+	if err != nil {
+		return err
+	}
+
+	// Create the hash of the data
+	hash := sha256.New()
+	hash.Write([]byte(slaJSON))
+	hashedData := hash.Sum(nil)
+
+	if signature.Verify(hashedData, pubKeyParsed) {
+		if client {
+			contract.Approval.ConsumerApproved = true
+		} else {
+			contract.Approval.ProviderApproved = true
+		}
+	} else {
+		return fmt.Errorf("signature could not be verified")
+	}
+
+	if contract.Approval.ConsumerApproved && contract.Approval.ProviderApproved {
+		contract.State = "active"
 	}
 
 	slaContractJSON, err := json.Marshal(contract)
@@ -307,8 +291,8 @@ func (s *SmartContract) RefundSLA(ctx contractapi.TransactionContextInterface, i
 		return err
 	}
 
-	if contract.SLA.State == "stopped" {
-		return fmt.Errorf("the contract %s is completed, no violations can happen", id)
+	if contract.State != "active" {
+		return fmt.Errorf("the contract %s is not active, but in %s state, no violations can happen", contract.State, id)
 	}
 
 	if !contract.ConsumerApproved || !contract.ProviderApproved {
@@ -364,8 +348,8 @@ func (s *SmartContract) SLAViolatedAndRefunded(ctx contractapi.TransactionContex
 		return err
 	}
 
-	if contract.SLA.State == "stopped" {
-		return fmt.Errorf("the contract %s is completed, no violations can happen", id)
+	if contract.State != "active" {
+		return fmt.Errorf("the contract %s is not active, but in %s state, no violations can happen", contract.State, id)
 	}
 
 	if !contract.ConsumerApproved || !contract.ProviderApproved {
