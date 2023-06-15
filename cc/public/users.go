@@ -8,6 +8,7 @@ import (
 
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 	"github.com/hyperledger/fabric-private-chaincode/lib"
+	"github.com/hyperledger/fabric-private-chaincode/lib/contracts"
 )
 
 func (s *SmartContract) CreateUser(ctx contractapi.TransactionContextInterface,
@@ -40,17 +41,21 @@ func (s *SmartContract) CreateUser(ctx contractapi.TransactionContextInterface,
 		ProviderOf: "",
 		ClientOf:   "",
 	}
-	userBytes, err := json.Marshal(user)
-	if err != nil {
-		return fmt.Errorf("unable to marshal json: %v", err)
-	}
+
 	err = ctx.GetStub().PutState(pubkey, []byte(name))
 
 	if err != nil {
 		return err
 	}
 
-	return ctx.GetStub().PutState(fmt.Sprintf("user_%v", name), userBytes)
+	err = s.SaveUser(ctx, user)
+	if err != nil {
+		err2 := ctx.GetStub().DelState(pubkey)
+		if err2 != nil {
+			return fmt.Errorf("multiple errors ocurred, error1: %v, error2: %v", err, err2)
+		}
+	}
+	return nil
 }
 
 // Returns the users balance.
@@ -79,11 +84,7 @@ func (s *SmartContract) updateUserBalance(ctx contractapi.TransactionContextInte
 	}
 	user.Balance = fmt.Sprintf("%f", newBalance)
 
-	userBytes, err := json.Marshal(user)
-	if err != nil {
-		return fmt.Errorf("failed to marshall user: %v", err)
-	}
-	return ctx.GetStub().PutState(fmt.Sprintf("user_%v", id), userBytes)
+	return s.SaveUser(ctx, user)
 }
 
 func (s *SmartContract) addProvidedSLA(ctx contractapi.TransactionContextInterface, userId, slaId string) error {
@@ -97,12 +98,7 @@ func (s *SmartContract) addProvidedSLA(ctx contractapi.TransactionContextInterfa
 	}
 	user.ProviderOf += slaId
 
-	userBytes, err := json.Marshal(user)
-	if err != nil {
-		return fmt.Errorf("failed to marshall user: %v", err)
-	}
-
-	return ctx.GetStub().PutState(fmt.Sprintf("user_%v", userId), userBytes)
+	return s.SaveUser(ctx, user)
 }
 
 func (s *SmartContract) addConsumedSLA(ctx contractapi.TransactionContextInterface, userId, slaId string) error {
@@ -116,40 +112,38 @@ func (s *SmartContract) addConsumedSLA(ctx contractapi.TransactionContextInterfa
 	}
 	user.ClientOf += slaId
 
-	userBytes, err := json.Marshal(user)
-	if err != nil {
-		return fmt.Errorf("failed to marshall user: %v", err)
-	}
-
-	return ctx.GetStub().PutState(fmt.Sprintf("user_%v", userId), userBytes)
+	return s.SaveUser(ctx, user)
 }
 
-func (s *SmartContract) SlaInUserContracts(ctx contractapi.TransactionContextInterface, userId, slaId string) (bool, error) {
+func (s *SmartContract) addProvidedNFT(ctx contractapi.TransactionContextInterface, userId, slaId string) error {
 	user, err := s.ReadUser(ctx, userId)
 	if err != nil {
-		return false, fmt.Errorf("failed to read user %v", err)
+		return fmt.Errorf("failed to read user %v", err)
 	}
 
-	clientList := strings.Split(user.ClientOf, ",")
-	// Slice of size 1 means that the delimiter was not found in the string
-	if len(clientList) != 1 {
-		for _, sla := range clientList {
-			if sla == slaId {
-				return true, nil
-			}
-		}
+	if user.NftProviderOf != "" {
+		user.NftProviderOf += ","
+	}
+	user.NftProviderOf += slaId
+	return s.SaveUser(ctx, user)
+}
+
+func (s *SmartContract) removeProvidedNFT(ctx contractapi.TransactionContextInterface, userId, nftId string) error {
+	user, err := s.ReadUser(ctx, userId)
+	if err != nil {
+		return fmt.Errorf("failed to read user %v", err)
 	}
 
-	providerList := strings.Split(user.ProviderOf, ",")
-	// Slice of size 1 means that the delimiter was not found in the string
-	if len(providerList) != 1 {
-		for _, sla := range providerList {
-			if sla == slaId {
-				return true, nil
-			}
+	nfts := contracts.GetIDsFromString(user.NftProviderOf)
+	for i, nft := range nfts {
+		if nft == nftId {
+			newNfts := append(nfts[:i], nfts[i+1:]...)
+			user.NftProviderOf = strings.Join(newNfts, ",")
+			return s.SaveUser(ctx, user)
 		}
 	}
-	return false, nil
+	// This is an error to indicate that a false delete happened. Could be silenced if we don't care
+	return fmt.Errorf("provided nft not found")
 }
 
 // ReadUser returns the User stored in the world state with given name.
@@ -200,6 +194,15 @@ func (s *SmartContract) UserExists(ctx contractapi.TransactionContextInterface, 
 	}
 
 	return UserJSON != nil, nil
+}
+
+func (s *SmartContract) SaveUser(ctx contractapi.TransactionContextInterface, user lib.User) error {
+	userBytes, err := json.Marshal(user)
+	if err != nil {
+		return fmt.Errorf("failed to marshall user: %v", err)
+	}
+
+	return ctx.GetStub().PutState(fmt.Sprintf("user_%v", user.Name), userBytes)
 }
 
 func (s *SmartContract) transferTokens(ctx contractapi.TransactionContextInterface,

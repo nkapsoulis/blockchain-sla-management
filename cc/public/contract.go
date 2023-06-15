@@ -42,20 +42,39 @@ type cc_SLA struct {
 	DailyViolations []int   `json:"DailyViolations"`
 }
 
+const slaCounterName = "slaCounter"
+const nftCounterName = "nftCounter"
+const slaPrefix = "sla"
+const nftListName = "nftList"
+
 // InitLedger is just a template for now.
 // Used to test the connection and verify that applications can connect to the chaincode.
 func (s *SmartContract) InitLedger(ctx contractapi.TransactionContextInterface) error {
 
-	initStatus, err := ctx.GetStub().GetState("initRan")
+	initialized, err := s.checkInitialized(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to read from world state: %v", err)
+		return err
 	}
-	if initStatus != nil {
+	if initialized {
 		return fmt.Errorf("init has already ran")
 	}
 
-	return ctx.GetStub().PutState("initRan", []byte("true"))
+	err = ctx.GetStub().PutState(slaCounterName, []byte("0"))
+	if err != nil {
+		return fmt.Errorf("failed to set %s: %v", slaCounterName, err)
+	}
 
+	err = ctx.GetStub().PutState(nftCounterName, []byte("0"))
+	if err != nil {
+		return fmt.Errorf("failed to set %s: %v", nftCounterName, err)
+	}
+
+	err = ctx.GetStub().PutState(nftListName, []byte(""))
+	if err != nil {
+		return fmt.Errorf("failed to set %s: %v", nftListName, err)
+	}
+
+	return ctx.GetStub().PutState("initRan", []byte("true"))
 }
 
 // CreateOrUpdateContract issues a new Contract to the world state with given details.
@@ -87,6 +106,18 @@ func (s *SmartContract) CreateOrUpdateContract(ctx contractapi.TransactionContex
 		return err
 	}
 
+	slaCounter, err := s.readCounter(ctx, slaCounterName)
+	if err != nil {
+		return fmt.Errorf("failed to read counter: %v", err)
+	}
+
+	approval := new(Approval)
+	approval.ProviderApproved = false
+	approval.ConsumerApproved = false
+
+	slaId := fmt.Sprintf("%v_%v", slaPrefix, slaCounter)
+	sla.ID = slaId
+
 	value := rand.Float64()
 	totalViolations := make([]int, 1)
 	dailyViolations := make([]int, 1)
@@ -105,10 +136,6 @@ func (s *SmartContract) CreateOrUpdateContract(ctx contractapi.TransactionContex
 		s.addConsumedSLA(ctx, sla.Client.Name, sla.ID)
 	}
 
-	approval := new(Approval)
-	approval.ProviderApproved = false
-	approval.ConsumerApproved = false
-
 	contract := cc_SLA{
 		SLA:             sla,
 		Approval:        *approval,
@@ -122,6 +149,12 @@ func (s *SmartContract) CreateOrUpdateContract(ctx contractapi.TransactionContex
 	slaContractJSON, err := json.Marshal(contract)
 	if err != nil {
 		return err
+	}
+
+	// It's better to stop at incrementing the counter, than having two SLA with same id.
+	err = s.incrementCounter(ctx, slaCounterName)
+	if err != nil {
+		return fmt.Errorf("failed to increment counter: %v", err)
 	}
 
 	return ctx.GetStub().PutState(fmt.Sprintf("contract_%v", contract.SLA.ID), slaContractJSON)
