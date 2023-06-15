@@ -3,7 +3,6 @@ package controllers
 import (
 	"encoding/json"
 	"net/http"
-	"strings"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -12,6 +11,7 @@ import (
 	"github.com/hyperledger/fabric-private-chaincode/clients/utils"
 	"github.com/hyperledger/fabric-private-chaincode/clients/utils/ledger"
 	t "github.com/hyperledger/fabric-private-chaincode/clients/utils/types"
+	"github.com/hyperledger/fabric-private-chaincode/lib/contracts"
 )
 
 type AssetURI struct {
@@ -30,7 +30,7 @@ func GetSingleSLA(c *gin.Context) {
 
 	user := ledger.GetUser(globals.Config, username.(string))
 
-	if !slaInUserContracts(user, id.ID) {
+	if !contracts.SLAInUserContracts(user.ProviderOf, user.ClientOf, id.ID) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User does not have access to this contract"})
 		return
 	}
@@ -53,7 +53,7 @@ func GetUserSLAs(c *gin.Context) {
 
 	var SLAs []t.SLA
 
-	for _, v := range getIDsFromString(user.ProviderOf) {
+	for _, v := range contracts.GetIDsFromString(user.ProviderOf) {
 		if v == "" {
 			break
 		}
@@ -65,7 +65,7 @@ func GetUserSLAs(c *gin.Context) {
 		SLAs = append(SLAs, asset)
 	}
 
-	for _, v := range getIDsFromString(user.ClientOf) {
+	for _, v := range contracts.GetIDsFromString(user.ClientOf) {
 		if v == "" {
 			break
 		}
@@ -118,7 +118,7 @@ func GetSLAApprovalState(c *gin.Context) {
 
 	user := ledger.GetUser(globals.Config, username.(string))
 
-	if !slaInUserContracts(user, id.ID) {
+	if !contracts.SLAInUserContracts(user.ProviderOf, user.ClientOf, id.ID) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User does not have access to this contract"})
 		return
 	}
@@ -154,7 +154,7 @@ func ApproveSLA(c *gin.Context) {
 
 	user := ledger.GetUser(globals.Config, username.(string))
 
-	if !slaInUserContracts(user, id.ID) {
+	if !contracts.SLAInUserContracts(user.ProviderOf, user.ClientOf, id.ID) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User does not have access to this contract"})
 		return
 	}
@@ -186,25 +186,4 @@ func ApproveSLA(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{})
 	return
 
-}
-
-func slaInUserContracts(user t.User, slaId string) bool {
-	// Slice of size 1 means that the delimiter was not found in the string
-	for _, sla := range getIDsFromString(user.ClientOf) {
-		if sla == slaId {
-			return true
-		}
-	}
-
-	// Slice of size 1 means that the delimiter was not found in the string
-	for _, sla := range getIDsFromString(user.ProviderOf) {
-		if sla == slaId {
-			return true
-		}
-	}
-	return false
-}
-
-func getIDsFromString(idString string) []string {
-	return strings.Split(idString, ",")
 }
