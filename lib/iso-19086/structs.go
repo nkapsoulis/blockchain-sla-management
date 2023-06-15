@@ -57,7 +57,7 @@ type SLO struct {
 }
 
 type SLA struct {
-	ID       string `json:"id"`
+	ID       string `json:"id,omitempty"`
 	SLO      SLO    `json:"slo"`
 	Provider Entity `json:"provider"`
 	Client   Entity `json:"client,omitempty"`

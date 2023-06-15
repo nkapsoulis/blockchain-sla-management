@@ -126,6 +126,16 @@ func CheckForViolation(config *pkg.Config, metric sla_types.Metric) (bool, error
 	if err != nil {
 		return false, err
 	}
+
+	state, err := GetSLAState(config, metric.SLAID)
+	if err != nil {
+		return false, err
+	}
+
+	if state != "active" {
+		return false, fmt.Errorf("the SLA is not in active state")
+	}
+
 	sla, err := GetSLA(config, metric.SLAID)
 	if err != nil {
 		return false, err
@@ -157,4 +167,13 @@ func SLAViolatedAndRefunded(config *pkg.Config, id string) error {
 		return err
 	}
 	return nil
+}
+
+func GetSLAState(config *pkg.Config, id string) (string, error) {
+	client := pkg.NewClient(config, "public")
+	state, err := client.Query("GetState", id)
+	if err != nil {
+		return "", err
+	}
+	return state, nil
 }
